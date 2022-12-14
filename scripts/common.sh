@@ -4,6 +4,10 @@ echo_start_banner() {
   echo "**** Starting Postfix ****"
 }
 
+echo_exec_banner() {
+  echo "**** Service Setup Done ****"
+}
+
 # function to set postfix configuration (taken from bokysan/docker-postfix)
 # Two modes:
 # 1. Forwarding to postconf -e <key>=<value> - just call it as do_postconf -e <key>=<value>
@@ -38,5 +42,9 @@ do_postconf() {
 		shift
 		postconf -e "$@"
 	fi
+}
 
+postfix_open_submission_port() {
+	# Use 587 (submission)
+	sed -i -r -e 's/^#submission/submission/' /etc/postfix/master.cf
 }
