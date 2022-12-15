@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 
 # make sure that all env variables are set
-if [[ -z "${SQL_USER:-}" ]]; then (>&2 echo "Error: env var SQL_USER not set" && exit 1); fi
+if [[ -z "${SQL_USER_FILE:-}" ]]; then (>&2 echo "Error: env var SQL_USER_FILE not set" && exit 1); fi
 if [[ -z "${SQL_PASSWORD_FILE:-}" ]]; then (>&2 echo "Error: env var SQL_PASSWORD_FILE not set" && exit 1); fi
 if [[ -z "${SQL_HOST:-}" ]]; then (>&2 echo "Error: env var SQL_HOST not set" && exit 1); fi
 if [[ -z "${SQL_DB_NAME:-}" ]]; then (>&2 echo "Error: env var SQL_DB_NAME not set" && exit 1); fi
 
 SQL_PASSWORD=$(head -1 $SQL_PASSWORD_FILE)
+SQL_USER=$(head -1 $SQL_USER_FILE)
+
+mkdir -p /etc/postfix/sql/
 
 create_virtual_alias_maps() {
   cat << EOF > /etc/postfix/sql/mysql_virtual_alias_maps.cf
