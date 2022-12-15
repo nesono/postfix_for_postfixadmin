@@ -2,13 +2,35 @@
 set -o errexit -o pipefail -o nounset
 
 . /scripts/common.sh
+. /scripts/sql_document_creators.sh
 
 echo_start_banner
 do_postconf -e 'home_mailbox = Maildir/'
 do_postconf -e 'mailbox_command ='
 do_postconf -e 'maillog_file=/dev/stdout'
 
+do_postconf -e 'virtual_mailbox_domains=proxy:mysql:/etc/postfix/sql/mysql_virtual_domains_maps.cf'
+do_postconf -e 'virtual_alias_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_maps.cf, proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_maps.cf, proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_catchall_maps.cf'
+do_postconf -e 'virtual_mailbox_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_mailbox_maps.cf,proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_mailbox_maps.cf'
+
+do_postconf -e 'relay_domains=proxy:mysql:/etc/postfix/sql/mysql_relay_domains.cf'
+do_postconf -e 'transport_maps=proxy:mysql:/etc/postfix/sql/mysql_transport_maps.cf'
+
+do_postconf -e 'virtual_mailbox_base=/var/mail/'
+
+# opens port 587
 postfix_open_submission_port
+
+# create mysql
+create_virtual_alias_maps
+create_virtual_alias_domain_maps
+create_virtual_alias_domain_catchall_maps
+create_virtual_domains_maps
+create_virtual_mailbox_maps
+create_virtual_alias_domain_mailbox_maps
+create_relay_domains
+create_transport_maps
+create_virtual_mailbox_limit_maps
 
 echo_exec_banner
 exec /usr/sbin/postfix -c /etc/postfix start-fg

@@ -23,6 +23,8 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
 EXPOSE 587
 EXPOSE 25
 
+VOLUME [ "/var/mail", "/var/spool/postfix", "/etc/postfix", "/etc/opendkim/keys" ]
+
 COPY scripts/* /scripts/
 RUN chmod +x /scripts/*
 
