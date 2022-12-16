@@ -5,6 +5,8 @@ set -o errexit -o pipefail -o nounset
 . /scripts/sql_document_creators.sh
 
 echo_start_banner
+
+# basic configuration
 do_postconf -e 'home_mailbox = Maildir/'
 do_postconf -e 'mailbox_command ='
 do_postconf -e 'maillog_file=/dev/stdout'
@@ -31,6 +33,16 @@ create_virtual_alias_domain_mailbox_maps
 create_relay_domains
 create_transport_maps
 create_virtual_mailbox_limit_maps
+
+# tls configuration
+if [[ -n "${TLS_CERT:-}" && -a "${TLS_KEY:-}" ]]; then
+  echo "Configuring TLS"
+  do_postconf -e "smtpd_tls_cert_file=${TLS_CERT}"
+  do_postconf -e "smtpd_tls_key_file=${TLS_KEY}"
+  do_postconf -e 'smtpd_tls_security_level=encrypt'
+else
+  echo "No TLS configured"
+fi
 
 echo_exec_banner
 exec /usr/sbin/postfix -c /etc/postfix start-fg
