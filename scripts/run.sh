@@ -11,14 +11,21 @@ do_postconf -e 'home_mailbox = Maildir/'
 do_postconf -e 'mailbox_command ='
 do_postconf -e 'maillog_file=/dev/stdout'
 
+# virtual mailboxes
+do_postconf -e 'virtual_mailbox_base=/var/mail/'
 do_postconf -e 'virtual_mailbox_domains=proxy:mysql:/etc/postfix/sql/mysql_virtual_domains_maps.cf'
 do_postconf -e 'virtual_alias_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_maps.cf, proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_maps.cf, proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_catchall_maps.cf'
 do_postconf -e 'virtual_mailbox_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_mailbox_maps.cf,proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_mailbox_maps.cf'
-
 do_postconf -e 'relay_domains=proxy:mysql:/etc/postfix/sql/mysql_relay_domains.cf'
 do_postconf -e 'transport_maps=proxy:mysql:/etc/postfix/sql/mysql_transport_maps.cf'
 
-do_postconf -e 'virtual_mailbox_base=/var/mail/'
+# authentication settings
+do_postconf -e 'smtp_sasl_auth_enable=yes'
+do_postconf -e 'smtpd_sasl_security_options=noanonymous'
+do_postconf -e 'smtpd_recipient_restrictions=permit_sasl_authenticated,permit_mynetworks,reject_unauth_destination'
+#smtpd_sasl_local_domain =
+do_postconf -e 'smtpd_sasl_type=dovecot'
+do_postconf -e 'smtpd_sasl_path=/var/spool/postfix/private/auth'
 
 # opens port 587
 postfix_open_submission_port

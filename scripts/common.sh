@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 echo_start_banner() {
-  echo "**** Starting Postfix ****"
+  echo "**** Starting Postfix Service Setup ****"
 }
 
 echo_exec_banner() {
-  echo "**** Service Setup Done ****"
+  echo "**** Service Setup Done, Starting Service ****"
 }
 
 # function to set postfix configuration (taken from bokysan/docker-postfix)
