@@ -10,6 +10,8 @@ echo_start_banner
 do_postconf -e 'home_mailbox = Maildir/'
 do_postconf -e 'mailbox_command ='
 do_postconf -e 'maillog_file=/dev/stdout'
+do_postconf -e 'smtpd_sender_restrictions=reject_unknown_sender_domain'
+do_postconf -e 'myhostname=${MY_HOST_NAME}'
 
 # virtual mailboxes
 do_postconf -e 'virtual_mailbox_base=/var/mail/'
