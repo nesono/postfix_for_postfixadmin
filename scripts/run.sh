@@ -4,8 +4,6 @@ set -o errexit -o pipefail -o nounset
 . /scripts/common.sh
 . /scripts/sql_document_creators.sh
 
-if [[ -z "${MY_HOST_NAME:-}" ]]; then (>&2 echo "Error: env var MY_HOST_NAME not set" && exit 1); fi
-
 echo_start_banner
 
 # basic configuration
@@ -13,7 +11,6 @@ do_postconf -e 'home_mailbox = Maildir/'
 do_postconf -e 'mailbox_command ='
 do_postconf -e 'maillog_file=/dev/stdout'
 do_postconf -e 'smtpd_sender_restrictions=reject_unknown_sender_domain'
-#do_postconf -e 'myhostname=${MY_HOST_NAME}'
 
 # virtual mailboxes
 do_postconf -e 'virtual_mailbox_base=/var/mail/'
@@ -22,6 +19,9 @@ do_postconf -e 'virtual_alias_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_al
 do_postconf -e 'virtual_mailbox_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_mailbox_maps.cf,proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_mailbox_maps.cf'
 do_postconf -e 'relay_domains=proxy:mysql:/etc/postfix/sql/mysql_relay_domains.cf'
 do_postconf -e 'transport_maps=proxy:mysql:/etc/postfix/sql/mysql_transport_maps.cf'
+do_postconf -e 'virtual_minimum_uid=1000'
+do_postconf -e 'virtual_uid_maps=static:1000'
+do_postconf -e 'virtual_gid_maps=static:1000'
 
 # authentication settings
 do_postconf -e 'smtp_sasl_auth_enable=yes'
