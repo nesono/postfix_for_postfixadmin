@@ -25,11 +25,13 @@ do_postconf -e 'virtual_gid_maps=static:1000'
 
 # authentication settings
 do_postconf -e 'smtp_sasl_auth_enable=yes'
-do_postconf -e 'smtpd_sasl_security_options=noanonymous'
+do_postconf -e 'smtpd_sasl_security_options=noanonymous,permit_mynetworks,reject_unauth_destination'
 do_postconf -e 'smtpd_recipient_restrictions=permit_sasl_authenticated,permit_mynetworks,reject_unauth_destination'
 #smtpd_sasl_local_domain =
 do_postconf -e 'smtpd_sasl_type=dovecot'
 do_postconf -e 'smtpd_sasl_path=/var/spool/postfix/private/auth'
+do_postconf -e 'smtpd_delay_reject=yes'
+do_postconf -e 'smtpd_client_restrictions=permit_sasl_authenticated,reject'
 
 # opens port 587
 postfix_open_submission_port
