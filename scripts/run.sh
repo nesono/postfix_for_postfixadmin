@@ -23,22 +23,33 @@ do_postconf -e 'virtual_minimum_uid=1000'
 do_postconf -e 'virtual_uid_maps=static:1000'
 do_postconf -e 'virtual_gid_maps=static:1000'
 
-# authentication settings
-do_postconf -e 'smtpd_sasl_type=dovecot'
-do_postconf -e 'smtpd_sasl_path=private/auth'
-do_postconf -e 'smtpd_sasl_auth_enable=yes'
-do_postconf -e 'broken_sasl_auth_clients=yes'
-do_postconf -e 'smtpd_sasl_security_options=noanonymous,noplaintext'
-do_postconf -e 'smtpd_sasl_tls_security_options=noanonymous'
-do_postconf -e 'smtpd_tls_auth_only=yes'
-do_postconf -e 'smtpd_relay_restrictions=permit_mynetworks,permit_sasl_authenticated,reject_unauth_destination'
-do_postconf -e 'smtpd_recipient_restrictions=permit_sasl_authenticated,reject_unauth_destination'
+# authentication settings - put this behind a switch?
+if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
+  echo "Configuring Dovecot SASL"
+  do_postconf -e 'smtpd_sasl_type=dovecot'
+  do_postconf -e "smtpd_sasl_path=${DOVECOT_SASL_SOCKET_PATH}"
+  do_postconf -e 'smtpd_sasl_auth_enable=yes'
+  do_postconf -e 'broken_sasl_auth_clients=yes'
+  do_postconf -e 'smtpd_sasl_security_options=noanonymous,noplaintext'
+  do_postconf -e 'smtpd_sasl_tls_security_options=noanonymous'
+  do_postconf -e 'smtpd_tls_auth_only=yes'
+  do_postconf -e 'smtpd_relay_restrictions=permit_mynetworks,permit_sasl_authenticated,reject_unauth_destination'
+  do_postconf -e 'smtpd_recipient_restrictions=permit_sasl_authenticated,reject_unauth_destination'
 
-# add-ons
-do_postconf -e 'smtpd_delay_reject=yes'
-do_postconf -e 'smtpd_client_restrictions=permit_sasl_authenticated,reject'
-#smtpd_sasl_local_domain =
+  # add-ons
+  do_postconf -e 'smtpd_delay_reject=yes'
+  do_postconf -e 'smtpd_client_restrictions=permit_sasl_authenticated,reject'
+  #smtpd_sasl_local_domain =
+else
+  echo "No Dovecot SASL configured"
+fi
 
+if [[ -n "${DOVECOT_LMTP_PATH:-}" ]]; then
+  echo "Configure Dovecot LMTP"
+  do_postconf -e "local_transport=lmtp:unix:${DOVECOT_LMTP_PATH}"
+else
+  echo "No Dovecot LMTP configured"
+fi
 
 # opens port 587
 postfix_open_submission_port

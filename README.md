@@ -4,8 +4,9 @@ This repository defines a docker image that can be used to build up a mail serve
 
 ## Credits
 
-Most ideas and scripts have been taking from [bokysan/docker-postfix](https://github.com/bokysan/docker-postfix).
-The actual configuration was taken from my [old work](https://www.nesono.com/node/276) on a Postfix mail server.
+* Most ideas and scripts have been taking from [bokysan/docker-postfix](https://github.com/bokysan/docker-postfix).  
+* The actual configuration was taken from my [old work](https://www.nesono.com/node/276) on a Postfix mail server.  
+* What made it actually work for me was this [page](https://www.postfix.org/SASL_README.html)  
 
 ## Requirements
 
@@ -21,14 +22,16 @@ Example docker-compose.yaml:
     depends_on:
       - mysql_mail
       - mail2-nesono-com
-    image: nesono/postfix-for-postfixadmin:2022-12-15.1
+    image: nesono/postfix-for-postfixadmin:2022-12-23.3
     environment:
       SQL_USER_FILE: /run/secrets/mysql_mail_user
       SQL_PASSWORD_FILE: /run/secrets/mysql_mail_password
       SQL_HOST: mysql_mail
       SQL_DB_NAME: mailserver
-      TLS_CERT: /etc/postfix/certs/mail2.nesono.crt
-      TLS_KEY: /etc/postfix/certs/mail2.nesono.key
+      TLS_CERT: /etc/postfix/certs/example.crt
+      TLS_KEY: /etc/postfix/certs/example.key
+      DOVECOT_SASL_SOCKET_PATH: "private/auth"
+      DOVECOT_LMTP_PATH: "private/dovecot-lmtp"
     secrets:
       - mysql_mail_password
       - mysql_mail_user
