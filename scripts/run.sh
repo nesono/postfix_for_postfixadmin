@@ -34,7 +34,7 @@ if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
   do_postconf -e 'smtpd_sasl_tls_security_options=noanonymous'
   do_postconf -e 'smtpd_tls_auth_only=yes'
   do_postconf -e 'smtpd_relay_restrictions=permit_mynetworks,permit_sasl_authenticated,reject_unauth_destination'
-  do_postconf -e 'smtpd_recipient_restrictions=permit_sasl_authenticated,reject_unauth_destination'
+  do_postconf -e 'smtpd_recipient_restrictions=permit_sasl_authenticated,reject_unauth_destination,check_policy_service unix:/var/spool/postfix/private/postgrey'
 
   # add-ons
   do_postconf -e 'smtpd_delay_reject=yes'
@@ -77,4 +77,4 @@ else
 fi
 
 echo_exec_banner
-exec /usr/sbin/postfix -c /etc/postfix start-fg
+exec supervisord -c /etc/supervisord.conf

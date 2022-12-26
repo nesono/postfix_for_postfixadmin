@@ -26,6 +26,7 @@ EXPOSE 25
 VOLUME [ "/var/mail", "/var/spool/postfix", "/etc/postfix", "/etc/opendkim/keys" ]
 
 COPY scripts/* /scripts/
+COPY configs/supervisord.conf /etc/
 RUN chmod +x /scripts/*
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD printf "EHLO healthcheck\n" | nc 127.0.0.1 587 | grep -qE "^220.*ESMTP Postfix"
