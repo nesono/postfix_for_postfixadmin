@@ -47,6 +47,7 @@ fi
 if [[ -n "${DOVECOT_LMTP_PATH:-}" ]]; then
   echo "Configure Dovecot LMTP"
   do_postconf -e "local_transport=lmtp:unix:${DOVECOT_LMTP_PATH}"
+  do_postconf -e "virtual_transport=lmtp:unix:${DOVECOT_LMTP_PATH}"
 else
   echo "No Dovecot LMTP configured"
 fi
