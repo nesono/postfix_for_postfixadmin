@@ -23,6 +23,21 @@ do_postconf -e 'virtual_minimum_uid=1000'
 do_postconf -e 'virtual_uid_maps=static:1000'
 do_postconf -e 'virtual_gid_maps=static:1000'
 
+# Accumulate milters
+# Add spamass milter spec
+if [[ -n "${SPAMASS_SOCKET_PATH:-}" ]]; then
+  RCP_RESTR="check_policy_service unix:${SPAMASS_SOCKET_PATH}${RCP_RESTR:+,$RCP_RESTR}"
+fi
+# Add postgrey milter spec
+if [[ -n "${POSTGREY_SOCKET_PATH:-}" ]]; then
+  RCP_RESTR="check_policy_service unix:${POSTGREY_SOCKET_PATH}${RCP_RESTR:+,$RCP_RESTR}"
+fi
+
+# Add DKIM milter spec
+if [[ -n "${DKIM_SOCKET_PATH:-}" ]]; then
+  RCP_RESTR="check_policy_service unix:${DKIM_SOCKET_PATH}${RCP_RESTR:+,$RCP_RESTR}"
+fi
+
 # authentication settings - put this behind a switch?
 if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
   echo "Configuring Dovecot SASL"
@@ -34,7 +49,8 @@ if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
   do_postconf -e 'smtpd_sasl_tls_security_options=noanonymous'
   do_postconf -e 'smtpd_tls_auth_only=yes'
   do_postconf -e 'smtpd_relay_restrictions=permit_mynetworks,permit_sasl_authenticated,reject_unauth_destination'
-  do_postconf -e 'smtpd_recipient_restrictions=permit_sasl_authenticated,reject_unauth_destination,check_policy_service unix:/var/spool/postfix/private/postgrey'
+  # expand the recipient restrictions (accounts for if the restrictions have already been set and adds a comma in such a case)
+  RCP_RESTR="permit_sasl_authenticated,reject_unauth_destination${RCP_RESTR:+,$RCP_RESTR}"
 
   # add-ons
   do_postconf -e 'smtpd_delay_reject=yes'
@@ -43,6 +59,12 @@ if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
 else
   echo "No Dovecot SASL configured"
 fi
+
+# Show configured milters / recipient restrictions
+echo "Accumulated smtpd_recipient_restrictions:"
+echo "${RCP_RESTR}"
+
+do_postconf -e "smtpd_recipient_restrictions=${RCP_RESTR:-}"
 
 if [[ -n "${DOVECOT_LMTP_PATH:-}" ]]; then
   echo "Configure Dovecot LMTP"
