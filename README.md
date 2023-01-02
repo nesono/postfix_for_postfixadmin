@@ -64,8 +64,14 @@ Use the following environment variables for that:
 ### Dovecot Services
 
 The following environment variables control the paths of the unix domain sockets below `/var/spool/postfix`.
-* `DOVECOT_SASL_SOCKET_PATH`
+* `DOVECOT_SASL_SOCKET_PATH`, e.g. `private/auth`
 * `DOVECOT_LMTP_PATH`
-* `SPAMASS_SOCKET_PATH`
-* `POSTGREY_SOCKET_PATH`
-* `DKIM_SOCKET_PATH`
+
+### Milter Communications Configuration
+
+These paths point to sockets below `/var/spool/postfix`. Note that these sockets must be created by the postfix-milters
+(as mentioned above) Docker image or something equivalent mechanism.
+
+* `SPAMASS_SOCKET_PATH`, e.g. `private/spamass`
+* `POSTGREY_SOCKET_PATH`, e.g. `private/postgrey`
+* `DKIM_SOCKET_PATH`, e.g. `private/dkim`
