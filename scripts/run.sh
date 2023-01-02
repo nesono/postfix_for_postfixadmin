@@ -61,8 +61,8 @@ else
 fi
 
 # Show configured milters / recipient restrictions
-echo "Accumulated smtpd_recipient_restrictions:"
-echo "${RCP_RESTR}"
+echo "Activating smtpd_recipient_restrictions with:"
+echo "   smtpd_recipient_restrictions=${RCP_RESTR}"
 
 do_postconf -e "smtpd_recipient_restrictions=${RCP_RESTR:-}"
 
@@ -89,7 +89,7 @@ create_transport_maps
 create_virtual_mailbox_limit_maps
 
 # tls configuration
-if [[ -n "${TLS_CERT:-}" && -a "${TLS_KEY:-}" ]]; then
+if [[ -n "${TLS_CERT:-}" && -n "${TLS_KEY:-}" ]]; then
   echo "Configuring TLS"
   do_postconf -e "smtpd_tls_cert_file=${TLS_CERT}"
   do_postconf -e "smtpd_tls_key_file=${TLS_KEY}"
