@@ -11,6 +11,7 @@ This repository defines a docker image that can be used to build up a mail serve
 ## Requirements
 
 Only MySQL is supported for now.
+For enabling milters for spam detection, greylisting, dkim, etc, this image depends on the image from https://github.com/nesono/postfix-milters
 
 ## Integration
 
