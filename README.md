@@ -63,8 +63,6 @@ Use the following environment variables for that:
 
 ### Dovecot Services
 
-private/postgrey
-
 The following environment variables control the paths of the unix domain sockets below `/var/spool/postfix`.
 * `DOVECOT_SASL_SOCKET_PATH`
 * `DOVECOT_LMTP_PATH`
