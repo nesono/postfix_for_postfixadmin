@@ -7,8 +7,10 @@ set -o errexit -o pipefail -o nounset
 echo_start_banner
 
 # basic configuration
-do_postconf -e 'home_mailbox = Maildir/'
-do_postconf -e 'mailbox_command ='
+if [[ -z "${MYHOSTNAME:-}" ]]; then (>&2 echo "Error: env var MYHOSTNAME not set" && exit 1); fi
+do_postconf -e 'myhostname=${MYHOSTNAME}'
+do_postconf -e 'home_mailbox=Maildir/'
+do_postconf -e 'mailbox_command='
 do_postconf -e 'maillog_file=/dev/stdout'
 do_postconf -e 'smtpd_sender_restrictions=reject_unknown_sender_domain'
 
