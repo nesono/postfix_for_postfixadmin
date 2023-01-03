@@ -25,6 +25,7 @@ Example docker-compose.yaml:
       - mail2-nesono-com
     image: nesono/postfix-for-postfixadmin:2022-12-23.3
     environment:
+      MYHOSTNAME: "smtp.example.com"
       SQL_USER_FILE: /run/secrets/mysql_mail_user
       SQL_PASSWORD_FILE: /run/secrets/mysql_mail_password
       SQL_HOST: mysql_mail
@@ -46,6 +47,8 @@ Example docker-compose.yaml:
       restart_policy:
         condition: on-failure
 ```
+### Postfix options
+* `MYHOSTNAME` - needs to be the FQDN of your mail server (make sure both forward and reverse DNS is set!)
 
 ### SQL Adapters
 
