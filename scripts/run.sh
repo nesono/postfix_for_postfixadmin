@@ -40,6 +40,17 @@ if [[ -n "${DKIM_SOCKET_PATH:-}" ]]; then
   RCP_RESTR="check_policy_service unix:${DKIM_SOCKET_PATH}${RCP_RESTR:+,$RCP_RESTR}"
 fi
 
+# Add SPF milter spec
+if [[ -n "${SPF_ENABLE:-}" ]]; then
+  RCP_RESTR="check_policy_service unix:private/policyd-spf${RCP_RESTR:+,$RCP_RESTR}"
+  do_postconf -e 'policyd-spf_time_limit=3600'
+  cat <<EOF >> /etc/postfix/master.cf
+policyd-spf  unix  -       n       n       -       0       spawn
+    user=policyd-spf argv=/usr/bin/policyd-spf
+EOF
+
+fi
+
 # authentication settings - put this behind a switch?
 if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
   echo "Configuring Dovecot SASL"
