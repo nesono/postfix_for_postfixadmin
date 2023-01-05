@@ -48,7 +48,11 @@ if [[ -n "${SPF_ENABLE:-}" ]]; then
 policyd-spf  unix  -       n       n       -       0       spawn
     user=policyd-spf argv=/usr/bin/policyd-spf
 EOF
+fi
 
+# Add DMARC milter spec
+if [[ -n "${DMARC_SOCKET_PATH:-}" ]]; then
+  RCP_RESTR="check_policy_service unix:${DMARC_SOCKET_PATH}${RCP_RESTR:+,$RCP_RESTR}"
 fi
 
 # authentication settings - put this behind a switch?
