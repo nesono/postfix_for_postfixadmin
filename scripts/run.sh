@@ -111,5 +111,8 @@ else
   echo "No TLS configured"
 fi
 
+# run the postfix instance configuration taken from the /etc/init.d/postfix script
+/usr/lib/postfix/configure-instance.sh
+
 echo_exec_banner
 exec supervisord -c /etc/supervisord.conf
