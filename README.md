@@ -78,3 +78,4 @@ These paths point to sockets below `/var/spool/postfix`. Note that these sockets
 * `SPAMASS_SOCKET_PATH`, e.g. `private/spamass`
 * `POSTGREY_SOCKET_PATH`, e.g. `private/postgrey`
 * `DKIM_SOCKET_PATH`, e.g. `private/dkim`
+* `SPF_ENABLE`, e.g. `1` (leave unset to disable)
