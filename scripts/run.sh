@@ -26,33 +26,24 @@ do_postconf -e 'virtual_uid_maps=static:1000'
 do_postconf -e 'virtual_gid_maps=static:1000'
 
 # Accumulate milters
-# Add spamass milter spec
-if [[ -n "${SPAMASS_SOCKET_PATH:-}" ]]; then
-  RCP_RESTR="check_policy_service unix:${SPAMASS_SOCKET_PATH}${RCP_RESTR:+,$RCP_RESTR}"
-fi
 # Add postgrey milter spec
 if [[ -n "${POSTGREY_SOCKET_PATH:-}" ]]; then
-  RCP_RESTR="check_policy_service unix:${POSTGREY_SOCKET_PATH}${RCP_RESTR:+,$RCP_RESTR}"
+  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}check_policy_service unix:${POSTGREY_SOCKET_PATH}"
+fi
+# Add spamass milter spec
+if [[ -n "${SPAMASS_SOCKET_PATH:-}" ]]; then
+  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}check_policy_service unix:${SPAMASS_SOCKET_PATH}"
 fi
 
-# Add DKIM milter spec
-if [[ -n "${DKIM_SOCKET_PATH:-}" ]]; then
-  RCP_RESTR="check_policy_service unix:${DKIM_SOCKET_PATH}${RCP_RESTR:+,$RCP_RESTR}"
-fi
 
 # Add SPF milter spec
 if [[ -n "${SPF_ENABLE:-}" ]]; then
-  RCP_RESTR="check_policy_service unix:private/policyd-spf${RCP_RESTR:+,$RCP_RESTR}"
+  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}check_policy_service unix:private/policyd-spf"
   do_postconf -e 'policyd-spf_time_limit=3600'
   cat <<EOF >> /etc/postfix/master.cf
 policyd-spf  unix  -       n       n       -       0       spawn
     user=policyd-spf argv=/usr/bin/policyd-spf
 EOF
-fi
-
-# Add DMARC milter spec
-if [[ -n "${DMARC_SOCKET_PATH:-}" ]]; then
-  RCP_RESTR="check_policy_service unix:${DMARC_SOCKET_PATH}${RCP_RESTR:+,$RCP_RESTR}"
 fi
 
 # authentication settings - put this behind a switch?
@@ -80,8 +71,22 @@ fi
 # Show configured milters / recipient restrictions
 echo "Activating smtpd_recipient_restrictions with:"
 echo "   smtpd_recipient_restrictions=${RCP_RESTR}"
-
 do_postconf -e "smtpd_recipient_restrictions=${RCP_RESTR:-}"
+
+# Add DKIM milter spec
+if [[ -n "${DKIM_SOCKET_PATH:-}" ]]; then
+  SMTPD_MILTERS="${SMTPD_MILTERS:+$SMTPD_MILTERS,}check_policy_service unix:${DKIM_SOCKET_PATH}"
+fi
+
+# Add DMARC milter spec
+if [[ -n "${DMARC_SOCKET_PATH:-}" ]]; then
+  SMTPD_MILTERS="${SMTPD_MILTERS:+$SMTPD_MILTERS,}check_policy_service unix:${DMARC_SOCKET_PATH}"
+fi
+
+# Configure SMTPD milters
+echo "Activating smtpd_milters with:"
+echo "   smtpd_milters=${SMTPD_MILTERS}"
+do_postconf -e "smtpd_milters=${SMTPD_MILTERS}"
 
 if [[ -n "${DOVECOT_LMTP_PATH:-}" ]]; then
   echo "Configure Dovecot LMTP"
