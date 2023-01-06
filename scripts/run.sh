@@ -69,24 +69,31 @@ else
 fi
 
 # Show configured milters / recipient restrictions
-echo "Activating smtpd_recipient_restrictions with:"
-echo "   smtpd_recipient_restrictions=${RCP_RESTR}"
-do_postconf -e "smtpd_recipient_restrictions=${RCP_RESTR:-}"
+if [[ -n "${RCP_RESTR:-}" ]]; then
+  echo "Activating smtpd_recipient_restrictions with:"
+  echo "   smtpd_recipient_restrictions=${RCP_RESTR}"
+  do_postconf -e "smtpd_recipient_restrictions=${RCP_RESTR:-}"
+fi
 
 # Add DKIM milter spec
 if [[ -n "${DKIM_SOCKET_PATH:-}" ]]; then
-  SMTPD_MILTERS="${SMTPD_MILTERS:+$SMTPD_MILTERS,}check_policy_service unix:${DKIM_SOCKET_PATH}"
+  SMTPD_MILTERS="${SMTPD_MILTERS:+$SMTPD_MILTERS,}local:${DKIM_SOCKET_PATH}"
 fi
 
 # Add DMARC milter spec
 if [[ -n "${DMARC_SOCKET_PATH:-}" ]]; then
-  SMTPD_MILTERS="${SMTPD_MILTERS:+$SMTPD_MILTERS,}check_policy_service unix:${DMARC_SOCKET_PATH}"
+  SMTPD_MILTERS="${SMTPD_MILTERS:+$SMTPD_MILTERS,}local:${DMARC_SOCKET_PATH}"
 fi
 
 # Configure SMTPD milters
-echo "Activating smtpd_milters with:"
-echo "   smtpd_milters=${SMTPD_MILTERS}"
-do_postconf -e "smtpd_milters=${SMTPD_MILTERS}"
+if [[ -n "${SMTPD_MILTERS:-}" ]]; then
+  echo "Activating smtpd_milters with:"
+  echo "   smtpd_milters=${SMTPD_MILTERS}"
+  do_postconf -e "smtpd_milters=${SMTPD_MILTERS}"
+  do_postconf -e 'milter_default_action=accept'
+  do_postconf -e 'milter_protocol=6'
+  do_postconf -e 'non_smtpd_milters=$smtpd_milters'
+fi
 
 if [[ -n "${DOVECOT_LMTP_PATH:-}" ]]; then
   echo "Configure Dovecot LMTP"
