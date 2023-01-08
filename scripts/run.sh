@@ -8,7 +8,9 @@ echo_start_banner
 
 # basic configuration
 if [[ -z "${MYHOSTNAME:-}" ]]; then (>&2 echo "Error: env var MYHOSTNAME not set" && exit 1); fi
+if [[ -z "${MYNETWORKS:-}" ]]; then (>&2 echo "Error: env var MYNETWORKS not set" && exit 1); fi
 do_postconf -e "myhostname=${MYHOSTNAME}"
+do_postconf -e "mynetworks=${MYNETWORKS}"
 do_postconf -e 'home_mailbox=Maildir/'
 do_postconf -e 'mailbox_command='
 do_postconf -e 'maillog_file=/dev/stdout'

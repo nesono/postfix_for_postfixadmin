@@ -26,6 +26,7 @@ Example docker-compose.yaml:
     image: nesono/postfix-for-postfixadmin:2022-12-23.3
     environment:
       MYHOSTNAME: "smtp.example.com"
+      MYNETWORKS: "10.0.0.0/8 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128"
       SQL_USER_FILE: /run/secrets/mysql_mail_user
       SQL_PASSWORD_FILE: /run/secrets/mysql_mail_password
       SQL_HOST: mysql_mail
@@ -49,6 +50,7 @@ Example docker-compose.yaml:
 ```
 ### Postfix options
 * `MYHOSTNAME` - needs to be the FQDN of your mail server (make sure both forward and reverse DNS is set!)
+* `MYNETWORKS` - required for internal network message sending (e.g. sieve redirects)
 
 ### SQL Adapters
 
