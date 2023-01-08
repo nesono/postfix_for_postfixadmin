@@ -60,11 +60,11 @@ if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
   do_postconf -e 'smtpd_tls_auth_only=yes'
   do_postconf -e 'smtpd_relay_restrictions=permit_mynetworks,permit_sasl_authenticated,reject_unauth_destination'
   # expand the recipient restrictions (accounts for if the restrictions have already been set and adds a comma in such a case)
-  RCP_RESTR="permit_sasl_authenticated,reject_unauth_destination${RCP_RESTR:+,$RCP_RESTR}"
+  RCP_RESTR="permit_mynetworks,permit_sasl_authenticated,reject_unauth_destination${RCP_RESTR:+,$RCP_RESTR}"
 
   # add-ons
   do_postconf -e 'smtpd_delay_reject=yes'
-  do_postconf -e 'smtpd_client_restrictions=permit_sasl_authenticated,reject'
+  do_postconf -e 'smtpd_client_restrictions=permit_mynetworks,permit_sasl_authenticated,reject'
   #smtpd_sasl_local_domain =
 else
   echo "No Dovecot SASL configured"
@@ -124,7 +124,7 @@ if [[ -n "${TLS_CERT:-}" && -n "${TLS_KEY:-}" ]]; then
   echo "Configuring TLS"
   do_postconf -e "smtpd_tls_cert_file=${TLS_CERT}"
   do_postconf -e "smtpd_tls_key_file=${TLS_KEY}"
-  do_postconf -e 'smtpd_tls_security_level=encrypt'
+  do_postconf -e 'smtpd_tls_security_level=may' # allow non tls on localhost
 else
   echo "No TLS configured"
 fi
