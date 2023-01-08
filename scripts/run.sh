@@ -125,6 +125,7 @@ if [[ -n "${TLS_CERT:-}" && -n "${TLS_KEY:-}" ]]; then
   do_postconf -e "smtpd_tls_cert_file=${TLS_CERT}"
   do_postconf -e "smtpd_tls_key_file=${TLS_KEY}"
   do_postconf -e 'smtpd_tls_security_level=may' # allow non tls on localhost
+  do_postconf -e 'smtpd_tls_mandatory_protocols=>=TLSv1.2'
 else
   echo "No TLS configured"
 fi
