@@ -81,3 +81,8 @@ These paths point to sockets below `/var/spool/postfix`. Note that these sockets
 * `POSTGREY_SOCKET_PATH`, e.g. `private/postgrey`
 * `DKIM_SOCKET_PATH`, e.g. `private/dkim`
 * `SPF_ENABLE`, e.g. `1` (leave unset to disable)
+
+### Enable SMTPS over Port 465
+
+Set the environment variable to something non-empty:
+* `SMTPS_ENABLE`, e.g. `1` (leave unset to disable)

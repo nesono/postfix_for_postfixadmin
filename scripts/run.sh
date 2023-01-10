@@ -48,6 +48,13 @@ policyd-spf  unix  -       n       n       -       0       spawn
 EOF
 fi
 
+if [[ -n "${SMTPS_ENABLE:-}" ]]; then
+  cat <<EOF >> /etc/postfix/master.cf
+smtps     inet  n       -       -       -       -       smtpd
+  -o smtpd_tls_wrappermode=yes
+EOF
+fi
+
 # authentication settings - put this behind a switch?
 if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
   echo "Configuring Dovecot SASL"
