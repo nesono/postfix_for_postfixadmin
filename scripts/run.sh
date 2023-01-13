@@ -15,7 +15,7 @@ do_postconf -e 'mydestination = $myhostname, localhost.localdomain, localhost'
 do_postconf -e 'home_mailbox=Maildir/'
 do_postconf -e 'mailbox_command='
 do_postconf -e 'maillog_file=/dev/stdout'
-do_postconf -e 'smtpd_sender_restrictions=reject_sender_login_mismatch,reject_unknown_sender_domain'
+do_postconf -e 'smtpd_sender_restrictions=reject_unlisted_sender,reject_sender_login_mismatch,reject_unknown_sender_domain'
 
 # virtual mailboxes
 do_postconf -e 'virtual_mailbox_base=/var/mail/'
