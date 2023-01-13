@@ -34,8 +34,9 @@ do_postconf -e 'smtpd_helo_required=yes'
 do_postconf -e 'strict_rfc821_envelopes=yes'
 do_postconf -e 'disable_vrfy_command=yes'
 do_postconf -e 'smtpd_relay_restrictions=permit_mynetworks,permit_sasl_authenticated,reject_unauth_destination'
-RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unauth_pipelining,reject_non_fqdn_sender,reject_non_fqdn_recipient,reject_unknown_sender_domain"
-RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unknown_helo_hostname,reject_unknown_recipient_domain,reject_rbl_client zen.spamhaus.org"
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unauth_pipelining,reject_non_fqdn_sender"
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_non_fqdn_recipient,reject_unknown_sender_domain,reject_unknown_helo_hostname"
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unknown_recipient_domain,reject_rbl_client zen.spamhaus.org"
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_reverse_client dbl.spamhaus.org,reject_rhsbl_helo dbl.spamhaus.org"
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_sender dbl.spamhaus.org"
 
@@ -79,12 +80,12 @@ if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
   do_postconf -e 'smtpd_sasl_tls_security_options=noanonymous'
   do_postconf -e 'smtpd_tls_auth_only=yes'
   # expand the recipient restrictions (accounts for if the restrictions have already been set and adds a comma in such a case)
-  RCP_RESTR="permit_mynetworks,permit_sasl_authenticated${RCP_RESTR:+,$RCP_RESTR}"
+  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}permit_mynetworks,permit_sasl_authenticated,permit_auth_destination"
 
   # add-ons
   do_postconf -e 'smtpd_delay_reject=yes'
-  do_postconf -e 'smtpd_client_restrictions=permit_mynetworks,permit_sasl_authenticated,reject'
-  #smtpd_sasl_local_domain =
+  #do_postconf -e 'smtpd_client_restrictions='
+  #do_postconf -e 'smtpd_sasl_local_domain='
 else
   echo "No Dovecot SASL configured"
 fi
