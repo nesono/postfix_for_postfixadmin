@@ -26,6 +26,6 @@ COPY scripts/* /scripts/
 COPY configs/* /etc/
 RUN chmod +x /scripts/*
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD printf "EHLO healthcheck\n" | nc ${MYHOSTNAME} 587 | grep -qE "^220.*ESMTP Postfix"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD printf "EHLO healthcheck\n" | nc localhost 587 | grep -qE "^220.*ESMTP Postfix"
 
 CMD [ "/bin/bash", "-c", "/scripts/run.sh" ]
