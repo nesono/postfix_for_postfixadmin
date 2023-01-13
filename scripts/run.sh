@@ -28,6 +28,15 @@ do_postconf -e 'virtual_minimum_uid=1000'
 do_postconf -e 'virtual_uid_maps=static:1000'
 do_postconf -e 'virtual_gid_maps=static:1000'
 
+# Add SPAM control
+do_postconf -e 'smtpd_helo_required=yes'
+do_postconf -e 'strict_rfc821_envelopes=yes'
+do_postconf -e 'disable_vrfy_command=yes'
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_non_fqdn_sender,reject_non_fqdn_recipient,reject_unknown_sender_domain"
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unknown_recipient_domain,reject_rbl_client zen.spamhaus.org"
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_reverse_client dbl.spamhaus.org,reject_rhsbl_helo dbl.spamhaus.org"
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_sender dbl.spamhaus.org"
+
 # Accumulate milters
 # Add postgrey milter spec
 if [[ -n "${POSTGREY_SOCKET_PATH:-}" ]]; then
@@ -56,8 +65,6 @@ smtps     inet  n       -       -       -       -       smtpd
 EOF
 fi
 
-# Add SPAM control
-RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rbl_client zen.spamhaus.org,reject_rhsbl_reverse_client dbl.spamhaus.org,reject_rhsbl_helo dbl.spamhaus.org,reject_rhsbl_sender dbl.spamhaus.org"
 
 # authentication settings - put this behind a switch?
 if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
@@ -103,7 +110,7 @@ if [[ -n "${SMTPD_MILTERS:-}" ]]; then
   echo "Activating smtpd_milters with:"
   echo "   smtpd_milters=${SMTPD_MILTERS}"
   do_postconf -e "smtpd_milters=${SMTPD_MILTERS}"
-  do_postconf -e 'milter_default_action=accept'
+  #do_postconf -e 'milter_default_action=accept'
   do_postconf -e 'milter_protocol=6'
   do_postconf -e 'non_smtpd_milters=$smtpd_milters'
 fi
