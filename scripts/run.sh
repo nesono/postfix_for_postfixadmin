@@ -22,7 +22,7 @@ do_postconf -e 'virtual_mailbox_base=/var/mail/'
 do_postconf -e 'virtual_mailbox_domains=proxy:mysql:/etc/postfix/sql/mysql_virtual_domains_maps.cf'
 do_postconf -e 'virtual_alias_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_maps.cf, proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_maps.cf, proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_catchall_maps.cf'
 do_postconf -e 'virtual_mailbox_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_mailbox_maps.cf,proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_mailbox_maps.cf'
-do_postconf -e 'smtpd_sender_login_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_mailbox_maps.cf,proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_mailbox_maps.cf'
+do_postconf -e 'smtpd_sender_login_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_sender_maps.cf,proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_sender_maps.cf'
 do_postconf -e 'relay_domains=proxy:mysql:/etc/postfix/sql/mysql_relay_domains.cf'
 do_postconf -e 'transport_maps=proxy:mysql:/etc/postfix/sql/mysql_transport_maps.cf'
 do_postconf -e 'virtual_minimum_uid=1000'
@@ -136,6 +136,8 @@ create_virtual_alias_domain_catchall_maps
 create_virtual_domains_maps
 create_virtual_mailbox_maps
 create_virtual_alias_domain_mailbox_maps
+create_virtual_sender_maps
+create_virtual_alias_domain_sender_maps
 create_relay_domains
 create_transport_maps
 create_virtual_mailbox_limit_maps

@@ -80,6 +80,29 @@ query = SELECT maildir FROM mailbox,alias_domain WHERE alias_domain.alias_domain
 EOF
 }
 
+# Adding (custom) to be able use smtpd_sender_login_maps in Postfix
+create_virtual_sender_maps() {
+  cat << EOF > /etc/postfix/sql/mysql_virtual_sender_maps.cf
+user = $SQL_USER
+password = $SQL_PASSWORD
+hosts = $SQL_HOST
+dbname = $SQL_DB_NAME
+query           = SELECT username FROM mailbox WHERE username='%s' AND active = '1'
+#expansion_limit = 100
+EOF
+}
+
+# Adding (custom) to be able use smtpd_sender_login_maps in Postfix
+create_virtual_alias_domain_sender_maps() {
+  cat << EOF > /etc/postfix/sql/mysql_virtual_alias_domain_sender_maps.cf
+user = $SQL_USER
+password = $SQL_PASSWORD
+hosts = $SQL_HOST
+dbname = $SQL_DB_NAME
+query = SELECT goto FROM alias WHERE alias.address = '%u'
+EOF
+}
+
 create_relay_domains() {
   cat << EOF > /etc/postfix/sql/mysql_relay_domains.cf
 user = $SQL_USER
