@@ -11,10 +11,11 @@ if [[ -z "${MYHOSTNAME:-}" ]]; then (>&2 echo "Error: env var MYHOSTNAME not set
 if [[ -z "${MYNETWORKS:-}" ]]; then (>&2 echo "Error: env var MYNETWORKS not set" && exit 1); fi
 do_postconf -e "myhostname=${MYHOSTNAME}"
 do_postconf -e "mynetworks=${MYNETWORKS}"
+do_postconf -e 'mydestination = $myhostname, localhost.localdomain, localhost'
 do_postconf -e 'home_mailbox=Maildir/'
 do_postconf -e 'mailbox_command='
 do_postconf -e 'maillog_file=/dev/stdout'
-do_postconf -e 'smtpd_sender_restrictions=reject_unknown_sender_domain'
+do_postconf -e 'smtpd_sender_restrictions=reject_sender_login_mismatch,reject_unknown_sender_domain'
 
 # virtual mailboxes
 do_postconf -e 'virtual_mailbox_base=/var/mail/'
@@ -54,6 +55,9 @@ smtps     inet  n       -       -       -       -       smtpd
   -o smtpd_tls_wrappermode=yes
 EOF
 fi
+
+# Add SPAM control
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rbl_client zen.spamhaus.org,reject_rhsbl_reverse_client dbl.spamhaus.org,reject_rhsbl_helo dbl.spamhaus.org,reject_rhsbl_sender dbl.spamhaus.org"
 
 # authentication settings - put this behind a switch?
 if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
