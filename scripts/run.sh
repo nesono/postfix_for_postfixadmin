@@ -22,6 +22,7 @@ do_postconf -e 'virtual_mailbox_base=/var/mail/'
 do_postconf -e 'virtual_mailbox_domains=proxy:mysql:/etc/postfix/sql/mysql_virtual_domains_maps.cf'
 do_postconf -e 'virtual_alias_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_maps.cf, proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_maps.cf, proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_catchall_maps.cf'
 do_postconf -e 'virtual_mailbox_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_mailbox_maps.cf,proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_mailbox_maps.cf'
+do_postconf -e 'smtpd_sender_login_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_mailbox_maps.cf,proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_mailbox_maps.cf'
 do_postconf -e 'relay_domains=proxy:mysql:/etc/postfix/sql/mysql_relay_domains.cf'
 do_postconf -e 'transport_maps=proxy:mysql:/etc/postfix/sql/mysql_transport_maps.cf'
 do_postconf -e 'virtual_minimum_uid=1000'
@@ -34,7 +35,7 @@ do_postconf -e 'strict_rfc821_envelopes=yes'
 do_postconf -e 'disable_vrfy_command=yes'
 do_postconf -e 'smtpd_relay_restrictions=permit_mynetworks,permit_sasl_authenticated,reject_unauth_destination'
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unauth_pipelining,reject_non_fqdn_sender,reject_non_fqdn_recipient,reject_unknown_sender_domain"
-RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unknown_recipient_domain,reject_rbl_client zen.spamhaus.org"
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unknown_helo_hostname,reject_unknown_recipient_domain,reject_rbl_client zen.spamhaus.org"
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_reverse_client dbl.spamhaus.org,reject_rhsbl_helo dbl.spamhaus.org"
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_sender dbl.spamhaus.org"
 
