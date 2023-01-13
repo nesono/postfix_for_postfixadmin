@@ -32,6 +32,7 @@ do_postconf -e 'virtual_gid_maps=static:1000'
 do_postconf -e 'smtpd_helo_required=yes'
 do_postconf -e 'strict_rfc821_envelopes=yes'
 do_postconf -e 'disable_vrfy_command=yes'
+do_postconf -e 'smtpd_relay_restrictions=permit_mydestinations,permit_sasl_authenticated,reject_unauth_destination'
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unauth_pipelining,reject_non_fqdn_sender,reject_non_fqdn_recipient,reject_unknown_sender_domain"
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unknown_recipient_domain,reject_rbl_client zen.spamhaus.org"
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_reverse_client dbl.spamhaus.org,reject_rhsbl_helo dbl.spamhaus.org"
@@ -76,7 +77,6 @@ if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
   do_postconf -e 'smtpd_sasl_security_options=noanonymous,noplaintext'
   do_postconf -e 'smtpd_sasl_tls_security_options=noanonymous'
   do_postconf -e 'smtpd_tls_auth_only=yes'
-  do_postconf -e 'smtpd_relay_restrictions=permit_mynetworks,permit_sasl_authenticated,reject_unauth_destination'
   # expand the recipient restrictions (accounts for if the restrictions have already been set and adds a comma in such a case)
   RCP_RESTR="permit_mynetworks,permit_sasl_authenticated${RCP_RESTR:+,$RCP_RESTR}"
 
@@ -88,7 +88,7 @@ else
   echo "No Dovecot SASL configured"
 fi
 
-RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unauth_destination"
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unauth_destination,reject"
 
 # Show configured milters / recipient restrictions
 if [[ -n "${RCP_RESTR:-}" ]]; then
@@ -112,7 +112,7 @@ if [[ -n "${SMTPD_MILTERS:-}" ]]; then
   echo "Activating smtpd_milters with:"
   echo "   smtpd_milters=${SMTPD_MILTERS}"
   do_postconf -e "smtpd_milters=${SMTPD_MILTERS}"
-  #do_postconf -e 'milter_default_action=accept'
+  do_postconf -e 'milter_default_action=accept'
   do_postconf -e 'milter_protocol=6'
   do_postconf -e 'non_smtpd_milters=$smtpd_milters'
 fi
