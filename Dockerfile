@@ -6,6 +6,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
     bash  \
     postfix  \
     postfix-mysql  \
+    postfix-policyd-spf-python \
     supervisor  \
     netcat  \
     && \
@@ -14,8 +15,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
     useradd -u 1000 -g 1000 vmail -d /srv/vmail && \
     passwd -l vmail && \
     mkdir /srv/mail && \
-    chown vmail:vmail /srv/mail && \
-    useradd policyd-spf -r
+    chown vmail:vmail /srv/mail
 
 EXPOSE 587
 EXPOSE 465

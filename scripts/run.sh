@@ -53,6 +53,10 @@ fi
 
 # Add SPF milter spec
 if [[ -n "${SPF_ENABLE:-}" ]]; then
+  if [[ ! -x "/usr/bin/policyd-spf" ]]; then
+    >&2 echo "Error: Could not find executable /usr/bin/policyd-spf, did you install it?"
+    exit 1
+  fi
   RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}check_policy_service unix:private/policyd-spf"
   do_postconf -e 'policyd-spf_time_limit=3600'
   cat <<EOF >> /etc/postfix/master.cf
