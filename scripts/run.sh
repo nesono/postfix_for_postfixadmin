@@ -57,7 +57,7 @@ if [[ -n "${SPF_ENABLE:-}" ]]; then
   do_postconf -e 'policyd-spf_time_limit=3600'
   cat <<EOF >> /etc/postfix/master.cf
 policyd-spf  unix  -       n       n       -       0       spawn
-    user=postfix argv=/usr/bin/policyd-spf
+    user=policyd-spf argv=/usr/bin/policyd-spf
 EOF
 fi
 

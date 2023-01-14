@@ -14,7 +14,8 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
     useradd -u 1000 -g 1000 vmail -d /srv/vmail && \
     passwd -l vmail && \
     mkdir /srv/mail && \
-    chown vmail:vmail /srv/mail
+    chown vmail:vmail /srv/mail && \
+    useradd policyd-spf -r
 
 EXPOSE 587
 EXPOSE 465
