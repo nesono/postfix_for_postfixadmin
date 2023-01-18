@@ -79,7 +79,9 @@ if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
   do_postconf -e 'smtpd_sasl_tls_security_options=noanonymous'
   do_postconf -e 'smtpd_tls_auth_only=yes'
   # expand the recipient restrictions (accounts for if the restrictions have already been set and adds a comma in such a case)
-  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}permit_mynetworks,permit_sasl_authenticated,reject_unknown_helo_hostname"
+  # re-enable this as soon as we have the real client IPs available and remove the line below it
+  #RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}permit_mynetworks,permit_sasl_authenticated,reject_unknown_helo_hostname"
+  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}permit_mynetworks,permit_sasl_authenticated"
 
   # add-ons
   do_postconf -e 'smtpd_delay_reject=yes'
