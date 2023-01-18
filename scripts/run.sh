@@ -40,11 +40,6 @@ RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unknown_recipient_domain,reject_rbl_c
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_reverse_client dbl.spamhaus.org,reject_rhsbl_helo dbl.spamhaus.org"
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_sender dbl.spamhaus.org"
 
-# Accumulate milters
-# Add postgrey milter spec
-if [[ -n "${POSTGREY_SOCKET_PATH:-}" ]]; then
-  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}check_policy_service unix:${POSTGREY_SOCKET_PATH}"
-fi
 # Add spamass milter spec
 if [[ -n "${SPAMASS_SOCKET_PATH:-}" ]]; then
   RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}check_policy_service unix:${SPAMASS_SOCKET_PATH}"
@@ -73,7 +68,7 @@ EOF
 fi
 
 
-# authentication settings - put this behind a switch?
+# authentication settings (SASL)
 if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
   echo "Configuring Dovecot SASL"
   do_postconf -e 'smtpd_sasl_type=dovecot'
@@ -92,6 +87,11 @@ if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
   #do_postconf -e 'smtpd_sasl_local_domain='
 else
   echo "No Dovecot SASL configured"
+fi
+
+# Add postgrey milter spec
+if [[ -n "${POSTGREY_SOCKET_PATH:-}" ]]; then
+  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}check_policy_service unix:${POSTGREY_SOCKET_PATH}"
 fi
 
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}permit_auth_destination,reject_unauth_destination,reject"
