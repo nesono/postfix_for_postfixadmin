@@ -15,7 +15,10 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
     useradd -u 1000 -g 1000 vmail -d /srv/vmail && \
     passwd -l vmail && \
     mkdir /srv/mail && \
-    chown vmail:vmail /srv/mail
+    chown vmail:vmail /srv/mail \
+# Beware that the vmail user has a dependency to the infrastructure repo
+# if you change the id information here, you will have to adapt the
+# infrastructure repo, too
 
 EXPOSE 587
 EXPOSE 465
