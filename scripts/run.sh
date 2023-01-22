@@ -78,7 +78,7 @@ if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
   do_postconf -e 'smtpd_sasl_security_options=noanonymous,noplaintext'
   do_postconf -e 'smtpd_sasl_tls_security_options=noanonymous'
   do_postconf -e 'smtpd_tls_auth_only=yes'
-  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}permit_mynetworks,permit_sasl_authenticated,reject_unknown_helo_hostname"
+  RCP_RESTR="permit_mynetworks,permit_sasl_authenticated${RCP_RESTR:+,$RCP_RESTR,}reject_unknown_helo_hostname"
 
   # add-ons
   do_postconf -e 'smtpd_delay_reject=yes'
