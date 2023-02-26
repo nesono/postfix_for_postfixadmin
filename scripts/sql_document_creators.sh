@@ -99,7 +99,7 @@ user = $SQL_USER
 password = $SQL_PASSWORD
 hosts = $SQL_HOST
 dbname = $SQL_DB_NAME
-query = SELECT goto FROM alias WHERE alias.address = '%u'
+query = SELECT goto FROM alias WHERE alias.address = '%s'
 EOF
 }
 
