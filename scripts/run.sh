@@ -89,6 +89,11 @@ else
   echo "No Dovecot SASL configured"
 fi
 
+# Fix SMTP smuggling according to https://www.postfix.org/smtp-smuggling.html
+# Change this if you ever upgrade to a newer postfix as describe on the page above
+do_postconf -e 'smtpd_data_restrictions=reject_unauth_pipelining'
+do_postconf -e 'smtpd_discard_ehlo_keywords=chunking,silent-discard'
+
 # Add postgrey milter spec
 if [[ -n "${POSTGREY_SOCKET_PATH:-}" ]]; then
   RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}check_policy_service unix:${POSTGREY_SOCKET_PATH}"
