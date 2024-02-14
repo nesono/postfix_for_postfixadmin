@@ -61,13 +61,23 @@ policyd-spf  unix  -       n       n       -       0       spawn
 EOF
 fi
 
+# Patch the smtp line to allow xclient from specific hosts
+if [[ -n "${AUTHORIZED_SMTPD_XCLIENT_HOSTS:-}" ]]; then
+  SMTP_LINE=$(cat /etc/postfix/master.cf | grep "^smtp\s\+inet")
+  sed -i "s|^$SMTP_LINE|# $SMTP_LINE|" /etc/postfix/master.cf
+  echo "$SMTP_LINE" >> /etc/postfix/master.cf
+  echo "  -o smtpd_authorized_xclient_hosts=${AUTHORIZED_SMTPD_XCLIENT_HOSTS}" >> /etc/postfix/master.cf
+fi
+
 if [[ -n "${SMTPS_ENABLE:-}" ]]; then
   cat <<EOF >> /etc/postfix/master.cf
 smtps     inet  n       -       -       -       -       smtpd
   -o smtpd_tls_wrappermode=yes
 EOF
+  if [[ -n "${AUTHORIZED_SMTPD_XCLIENT_HOSTS:-}" ]]; then
+    echo "  -o smtpd_authorized_xclient_hosts=${AUTHORIZED_SMTPD_XCLIENT_HOSTS}" >> /etc/postfix/master.cf
+  fi
 fi
-
 
 # authentication settings (SASL)
 if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then

@@ -86,3 +86,8 @@ These paths point to sockets below `/var/spool/postfix`. Note that these sockets
 
 Set the environment variable to something non-empty:
 * `SMTPS_ENABLE`, e.g. `1` (leave unset to disable)
+
+### XCLIENT hosts
+
+Set the environment variable to networks / netmasks / hosts as documented in [postfix](https://www.postfix.org/postconf.5.html#smtpd_authorized_xclient_hosts)
+* `AUTHORIZED_SMTPD_XCLIENT_HOSTS`, e.g. `172.20.0.1`
