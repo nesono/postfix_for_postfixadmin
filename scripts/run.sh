@@ -74,6 +74,7 @@ if [[ -n "${SMTPS_ENABLE:-}" ]]; then
 smtps     inet  n       -       -       -       -       smtpd
   -o smtpd_tls_wrappermode=yes
 EOF
+  # Patch the smtp line to allow xclient from specific hosts - smtps version
   if [[ -n "${AUTHORIZED_SMTPD_XCLIENT_HOSTS:-}" ]]; then
     echo "  -o smtpd_authorized_xclient_hosts=${AUTHORIZED_SMTPD_XCLIENT_HOSTS}" >> /etc/postfix/master.cf
   fi
@@ -86,9 +87,13 @@ if [[ -n "${DOVECOT_SASL_SOCKET_PATH:-}" ]]; then
   do_postconf -e "smtpd_sasl_path=${DOVECOT_SASL_SOCKET_PATH}"
   do_postconf -e 'smtpd_sasl_auth_enable=yes'
   do_postconf -e 'broken_sasl_auth_clients=yes'
-  do_postconf -e 'smtpd_sasl_security_options=noanonymous,noplaintext'
-  do_postconf -e 'smtpd_sasl_tls_security_options=noanonymous'
-  do_postconf -e 'smtpd_tls_auth_only=yes'
+  if [[ -n "${TLS_CERT:-}" && -n "${TLS_KEY:-}" ]]; then
+    do_postconf -e 'smtpd_sasl_security_options=noanonymous,noplaintext'
+    do_postconf -e 'smtpd_sasl_tls_security_options=noanonymous'
+    do_postconf -e 'smtpd_tls_auth_only=yes'
+  else
+    do_postconf -e 'smtpd_sasl_security_options=noanonymous'
+  fi
   RCP_RESTR="permit_mynetworks,permit_sasl_authenticated${RCP_RESTR:+,$RCP_RESTR,}reject_unknown_helo_hostname"
 
   # add-ons
