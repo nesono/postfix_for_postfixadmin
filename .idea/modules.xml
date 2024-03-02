@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/postfix-for-postfixadmin.iml" filepath="$PROJECT_DIR$/.idea/postfix-for-postfixadmin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/postfix_for_postfixadmin.iml" filepath="$PROJECT_DIR$/.idea/postfix_for_postfixadmin.iml" />
     </modules>
   </component>
 </project>
