@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -o errexit -o pipefail -o nounset
+set -x
 
 . /scripts/common.sh
 . /scripts/sql_document_creators.sh
@@ -61,13 +62,6 @@ policyd-spf  unix  -       n       n       -       0       spawn
 EOF
 fi
 
-# Patch the smtp line to allow xclient from specific hosts
-if [[ -n "${AUTHORIZED_SMTPD_XCLIENT_HOSTS:-}" ]]; then
-  SMTP_LINE=$(cat /etc/postfix/master.cf | grep "^smtp\s\+inet")
-  sed -i "s|^$SMTP_LINE|# $SMTP_LINE|" /etc/postfix/master.cf
-  echo "$SMTP_LINE" >> /etc/postfix/master.cf
-  echo "  -o smtpd_authorized_xclient_hosts=${AUTHORIZED_SMTPD_XCLIENT_HOSTS}" >> /etc/postfix/master.cf
-fi
 
 if [[ -n "${SMTPS_ENABLE:-}" ]]; then
   cat <<EOF >> /etc/postfix/master.cf
@@ -176,6 +170,22 @@ if [[ -n "${TLS_CERT:-}" && -n "${TLS_KEY:-}" ]]; then
   do_postconf -e 'smtpd_tls_mandatory_protocols=>=TLSv1.2'
 else
   echo "No TLS configured"
+fi
+
+
+# Patch the smtp and submission lines to allow xclient from specific hosts
+if [[ -n "${AUTHORIZED_SMTPD_XCLIENT_HOSTS:-}" ]]; then
+  # smtp line
+  SMTP_LINE=$(cat /etc/postfix/master.cf | grep "^smtp\s\+inet")
+  sed -i "s|^$SMTP_LINE|# $SMTP_LINE|" /etc/postfix/master.cf
+  echo "$SMTP_LINE" >> /etc/postfix/master.cf
+  echo "  -o smtpd_authorized_xclient_hosts=${AUTHORIZED_SMTPD_XCLIENT_HOSTS}" >> /etc/postfix/master.cf
+
+  # submission line
+  SUBMISSION_LINE=$(cat /etc/postfix/master.cf | grep "^submission\s\+inet")
+  sed -i "s|^$SUBMISSION_LINE|# $SUBMISSION_LINE|" /etc/postfix/master.cf
+  echo "$SUBMISSION_LINE" >> /etc/postfix/master.cf
+  echo "  -o smtpd_authorized_xclient_hosts=${AUTHORIZED_SMTPD_XCLIENT_HOSTS}" >> /etc/postfix/master.cf
 fi
 
 # run the postfix instance configuration taken from the /etc/init.d/postfix script
