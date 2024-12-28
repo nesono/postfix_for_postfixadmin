@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 LABEL maintainer="Jochen Issing <c.333+github@nesono.com> (@jochenissing)"
 
 RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
