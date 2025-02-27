@@ -35,6 +35,7 @@ Example docker-compose.yaml:
       TLS_KEY: /etc/postfix/certs/example.key
       DOVECOT_SASL_SOCKET_PATH: "private/auth"
       DOVECOT_LMTP_PATH: "private/dovecot-lmtp"
+      # SPAMHAUS_DISABLE: "1"
     secrets:
       - mysql_mail_password
       - mysql_mail_user

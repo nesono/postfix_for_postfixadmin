@@ -42,12 +42,14 @@ RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_non_fqdn_recipient,reject_unknown_sen
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unknown_recipient_domain"
 
 # Spamhaus SMTP receipient rejections
-RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rbl_client zen.spamhaus.org=127.0.0.[2..11]"
-RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_sender dbl.spamhaus.org=127.0.1.[2..99]"
-RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_helo dbl.spamhaus.org=127.0.1.[2..99]"
-RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_reverse_client dbl.spamhaus.org=127.0.1.[2..99]"
-RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}warn_if_reject reject_rbl_client zen.spamhaus.org=127.255.255.[1..255]"
-RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_sender dbl.spamhaus.org"
+if [[ "${SPAMHAUS_DISABLE}" == "1" ]]; then
+  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rbl_client zen.spamhaus.org=127.0.0.[2..11]"
+  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_sender dbl.spamhaus.org=127.0.1.[2..99]"
+  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_helo dbl.spamhaus.org=127.0.1.[2..99]"
+  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_reverse_client dbl.spamhaus.org=127.0.1.[2..99]"
+  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}warn_if_reject reject_rbl_client zen.spamhaus.org=127.255.255.[1..255]"
+  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_sender dbl.spamhaus.org"
+fi
 
 # Add spamass milter spec
 if [[ -n "${SPAMASS_SOCKET_PATH:-}" ]]; then
