@@ -36,10 +36,17 @@ do_postconf -e 'smtpd_helo_required=yes'
 do_postconf -e 'strict_rfc821_envelopes=yes'
 do_postconf -e 'disable_vrfy_command=yes'
 do_postconf -e 'smtpd_relay_restrictions=permit_mynetworks,permit_sasl_authenticated,reject_unauth_destination'
+
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unauth_pipelining,reject_non_fqdn_sender"
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_non_fqdn_recipient,reject_unknown_sender_domain"
-RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unknown_recipient_domain,reject_rbl_client zen.spamhaus.org"
-RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_reverse_client dbl.spamhaus.org,reject_rhsbl_helo dbl.spamhaus.org"
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unknown_recipient_domain"
+
+# Spamhaus SMTP receipient rejections
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rbl_client zen.spamhaus.org=127.0.0.[2..11]"
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_sender dbl.spamhaus.org=127.0.1.[2..99]"
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_helo dbl.spamhaus.org=127.0.1.[2..99]"
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_reverse_client dbl.spamhaus.org=127.0.1.[2..99]"
+RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}warn_if_reject reject_rbl_client zen.spamhaus.org=127.255.255.[1..255]"
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_sender dbl.spamhaus.org"
 
 # Add spamass milter spec
