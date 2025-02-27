@@ -8,7 +8,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
     postfix-mysql  \
     postfix-policyd-spf-python \
     supervisor  \
-    netcat  \
+    netcat-traditional  \
     && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 1000 vmail && \
