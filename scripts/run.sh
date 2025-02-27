@@ -41,8 +41,8 @@ RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unauth_pipelining,reject_non_fqdn_sen
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_non_fqdn_recipient,reject_unknown_sender_domain"
 RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_unknown_recipient_domain"
 
-# Spamhaus SMTP receipient rejections
-if [[ "${SPAMHAUS_DISABLE}" == "1" ]]; then
+# Spamhaus SMTP recipient rejections
+if [[ -n "${SPAMHAUS_DISABLE}" ]]; then
   RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rbl_client zen.spamhaus.org=127.0.0.[2..11]"
   RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_sender dbl.spamhaus.org=127.0.1.[2..99]"
   RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_helo dbl.spamhaus.org=127.0.1.[2..99]"
