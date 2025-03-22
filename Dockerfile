@@ -20,6 +20,9 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
 # Beware that the vmail user has a dependency to the infrastructure repo
 # if you change the id information here, you will have to adapt the
 # infrastructure repo, too
+# If you change the uid and/or gid above make sure you replace all occurences of it in this repo and in the infrastructure repo
+# Also run something like the following command to change all existing files:
+# chown <uid>:<gid> -R /svc/volumes/mail
 
 EXPOSE 587
 EXPOSE 465
@@ -30,7 +33,5 @@ VOLUME [ "/var/mail", "/var/spool/postfix", "/etc/postfix", "/etc/opendkim/keys"
 COPY scripts/* /scripts/
 COPY configs/* /etc/
 RUN chmod +x /scripts/*
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD printf "EHLO healthcheck\n" | nc localhost 587 | grep -qE "^220.*ESMTP Postfix"
 
 CMD [ "/bin/bash", "-c", "/scripts/run.sh" ]
