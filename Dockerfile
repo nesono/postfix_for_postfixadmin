@@ -11,9 +11,8 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
     netcat-traditional  \
     && \
     rm -rf /var/lib/apt/lists/* && \
-    cat /etc/passwd && \
-    groupadd -g 1000 vmail && \
-    useradd -u 1000 -g 1000 vmail -d /srv/vmail && \
+    groupadd -g 3000 vmail && \
+    useradd -u 3000 -g 3000 vmail -d /srv/vmail && \
     passwd -l vmail && \
     mkdir /srv/mail && \
     chown vmail:vmail /srv/mail
