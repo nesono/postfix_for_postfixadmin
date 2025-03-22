@@ -27,9 +27,11 @@ do_postconf -e 'virtual_mailbox_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_
 do_postconf -e 'smtpd_sender_login_maps=proxy:mysql:/etc/postfix/sql/mysql_virtual_sender_maps.cf,proxy:mysql:/etc/postfix/sql/mysql_virtual_alias_domain_sender_maps.cf'
 do_postconf -e 'relay_domains=proxy:mysql:/etc/postfix/sql/mysql_relay_domains.cf'
 do_postconf -e 'transport_maps=proxy:mysql:/etc/postfix/sql/mysql_transport_maps.cf'
-do_postconf -e 'virtual_minimum_uid=1000'
-do_postconf -e 'virtual_uid_maps=static:1000'
-do_postconf -e 'virtual_gid_maps=static:1000'
+
+# Keep these in sync with the infrastructure repository vmail user id and group
+do_postconf -e 'virtual_minimum_uid=3000'
+do_postconf -e 'virtual_uid_maps=static:3000'
+do_postconf -e 'virtual_gid_maps=static:3000'
 
 # Add SPAM control
 do_postconf -e 'smtpd_helo_required=yes'

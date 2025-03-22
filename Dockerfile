@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 LABEL maintainer="Jochen Issing <c.333+github@nesono.com> (@jochenissing)"
 
 RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
@@ -8,11 +8,12 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
     postfix-mysql  \
     postfix-policyd-spf-python \
     supervisor  \
-    netcat  \
+    netcat-traditional  \
+    prometheus-postfix-exporter \
     && \
     rm -rf /var/lib/apt/lists/* && \
-    groupadd -g 1000 vmail && \
-    useradd -u 1000 -g 1000 vmail -d /srv/vmail && \
+    groupadd -g 3000 vmail && \
+    useradd -u 3000 -g 3000 vmail -d /srv/vmail && \
     passwd -l vmail && \
     mkdir /srv/mail && \
     chown vmail:vmail /srv/mail
