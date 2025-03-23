@@ -9,7 +9,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
     postfix-policyd-spf-python \
     supervisor  \
     netcat-traditional  \
-    prometheus-postfix-exporter \
     && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 3000 vmail && \
