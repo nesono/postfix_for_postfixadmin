@@ -7,6 +7,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
     postfix  \
     postfix-mysql  \
     postfix-policyd-spf-python \
+	postsrsd \
     supervisor  \
     netcat-traditional  \
     && \
