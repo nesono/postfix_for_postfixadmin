@@ -5,6 +5,9 @@ set -x
 . /scripts/common.sh
 . /scripts/sql_document_creators.sh
 
+# patch SRS configuration
+echo "SRS_DOMAIN=$MYHOSTNAME" >> /etc/default/postsrsd
+
 echo_start_banner
 
 # basic configuration
