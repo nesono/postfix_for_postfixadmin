@@ -5,6 +5,9 @@ set -x
 . /scripts/common.sh
 . /scripts/sql_document_creators.sh
 
+# patch SRS configuration
+echo "SRS_DOMAIN=$MYHOSTNAME" >> /etc/default/postsrsd
+
 echo_start_banner
 
 # basic configuration
@@ -18,6 +21,12 @@ do_postconf -e 'mailbox_command='
 do_postconf -e 'maillog_file=/dev/stdout'
 do_postconf -e 'smtpd_sender_restrictions=reject_unlisted_sender,reject_sender_login_mismatch,reject_unknown_sender_domain'
 do_postconf -e 'message_size_limit=104857600'
+
+# configure SRS (Sender Rewriting Scheme)
+do_postconf -e "sender_canonical_maps = tcp:127.0.0.1:10001"
+do_postconf -e "sender_canonical_classes = envelope_sender"
+do_postconf -e "recipient_canonical_maps = tcp:127.0.0.1:10002"
+do_postconf -e "recipient_canonical_classes = envelope_recipient"
 
 # virtual mailboxes
 do_postconf -e 'virtual_mailbox_base=/var/mail/'
