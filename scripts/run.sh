@@ -11,8 +11,8 @@ echo_start_banner
 if [[ -z "${MYHOSTNAME:-}" ]]; then (>&2 echo "Error: env var MYHOSTNAME not set" && exit 1); fi
 if [[ -z "${MYNETWORKS:-}" ]]; then (>&2 echo "Error: env var MYNETWORKS not set" && exit 1); fi
 
-# patch SRS configuration (postsrsd v2 uses /etc/postsrsd.conf)
-sed -i "s/^#\\?\\s*domains\\s*=.*/domains = { \"${MYHOSTNAME}\" }/" /etc/postsrsd.conf
+# patch SRS configuration (postsrsd v1 on Ubuntu 24.04 uses /etc/default/postsrsd)
+echo "SRS_DOMAIN=${MYHOSTNAME}" >> /etc/default/postsrsd
 
 do_postconf -e "myhostname=${MYHOSTNAME}"
 do_postconf -e "mynetworks=${MYNETWORKS}"
