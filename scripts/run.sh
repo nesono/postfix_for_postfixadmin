@@ -12,7 +12,7 @@ if [[ -z "${MYHOSTNAME:-}" ]]; then (>&2 echo "Error: env var MYHOSTNAME not set
 if [[ -z "${MYNETWORKS:-}" ]]; then (>&2 echo "Error: env var MYNETWORKS not set" && exit 1); fi
 
 # patch SRS configuration (postsrsd v1 on Ubuntu 24.04 uses /etc/default/postsrsd)
-sed -i "s/^SRS_DOMAIN=.*/SRS_DOMAIN=${MYHOSTNAME}/" /etc/default/postsrsd
+echo "SRS_DOMAIN=${MYHOSTNAME}" >> /etc/default/postsrsd
 
 do_postconf -e "myhostname=${MYHOSTNAME}"
 do_postconf -e "mynetworks=${MYNETWORKS}"
