@@ -5,14 +5,15 @@ set -x
 . /scripts/common.sh
 . /scripts/sql_document_creators.sh
 
-# patch SRS configuration
-echo "SRS_DOMAIN=$MYHOSTNAME" >> /etc/default/postsrsd
-
 echo_start_banner
 
 # basic configuration
 if [[ -z "${MYHOSTNAME:-}" ]]; then (>&2 echo "Error: env var MYHOSTNAME not set" && exit 1); fi
 if [[ -z "${MYNETWORKS:-}" ]]; then (>&2 echo "Error: env var MYNETWORKS not set" && exit 1); fi
+
+# patch SRS configuration (postsrsd v2 uses /etc/postsrsd.conf)
+sed -i "s/^#\\?\\s*domains\\s*=.*/domains = { \"${MYHOSTNAME}\" }/" /etc/postsrsd.conf
+
 do_postconf -e "myhostname=${MYHOSTNAME}"
 do_postconf -e "mynetworks=${MYNETWORKS}"
 do_postconf -e 'mydestination = $myhostname, localhost.localdomain, localhost'
