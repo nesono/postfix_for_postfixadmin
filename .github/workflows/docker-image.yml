@@ -41,7 +41,7 @@ jobs:
     - name: Wait for services to start
       run: |
         for i in $(seq 1 30); do
-          if docker exec postfix-test supervisorctl status | grep -q RUNNING; then
+          if docker exec postfix-test supervisorctl -c /etc/supervisord.conf status | grep -q RUNNING; then
             echo "Services started after ${i}s"
             break
           fi
@@ -50,11 +50,11 @@ jobs:
 
     - name: Verify Postfix is running
       run: |
-        docker exec postfix-test supervisorctl status postfix
+        docker exec postfix-test supervisorctl -c /etc/supervisord.conf status postfix
         docker exec postfix-test postconf myhostname | grep mail.example.com
 
     - name: Verify PostSRSd is running
-      run: docker exec postfix-test supervisorctl status postsrs
+      run: docker exec postfix-test supervisorctl -c /etc/supervisord.conf status postsrs
 
     - name: Verify SMTP responds on port 25
       run: |

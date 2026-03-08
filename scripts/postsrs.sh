@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# Source the postsrsd defaults and launch in foreground
-# postsrsd v1 requires -e to read config from environment variables
-set -a
+# Source the postsrsd defaults and launch in foreground with explicit args
 . /etc/default/postsrsd
-set +a
-exec /usr/sbin/postsrsd -e
+exec /usr/sbin/postsrsd \
+  -d"${SRS_DOMAIN}" \
+  -s"${SRS_SECRET}" \
+  -f"${SRS_FORWARD_PORT:-10001}" \
+  -r"${SRS_REVERSE_PORT:-10002}" \
+  -u"${RUN_AS:-postsrsd}" \
+  ${SRS_EXCLUDE_DOMAINS:+-X"${SRS_EXCLUDE_DOMAINS}"}
