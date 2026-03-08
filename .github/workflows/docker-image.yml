@@ -63,7 +63,7 @@ jobs:
         echo "$response" | grep -q "220"
 
     - name: Verify SRS config contains domain
-      run: docker exec postfix-test grep 'mail.example.com' /etc/postsrsd.conf
+      run: docker exec postfix-test grep 'mail.example.com' /etc/default/postsrsd
 
     - name: Show logs on failure
       if: failure()
