@@ -8,11 +8,67 @@ on:
 
 jobs:
 
-  build:
+  build-and-smoke-test:
 
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v6
+
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      run: docker build . --file Dockerfile --tag postfix-smoke-test
+
+    - name: Create dummy SQL credential files
+      run: |
+        echo "testuser" > /tmp/sql_user.txt
+        echo "testpass" > /tmp/sql_password.txt
+
+    - name: Start container
+      run: |
+        docker run -d --name postfix-test \
+          -e MYHOSTNAME=mail.example.com \
+          -e MYNETWORKS="127.0.0.0/8" \
+          -e SQL_USER_FILE=/tmp/sql_user.txt \
+          -e SQL_PASSWORD_FILE=/tmp/sql_password.txt \
+          -e SQL_HOST=127.0.0.1 \
+          -e SQL_DB_NAME=postfix \
+          -e SPAMHAUS_DISABLE=1 \
+          -v /tmp/sql_user.txt:/tmp/sql_user.txt:ro \
+          -v /tmp/sql_password.txt:/tmp/sql_password.txt:ro \
+          -p 2525:25 \
+          postfix-smoke-test
+
+    - name: Wait for services to start
+      run: |
+        for i in $(seq 1 30); do
+          if docker exec postfix-test supervisorctl status | grep -q RUNNING; then
+            echo "Services started after ${i}s"
+            break
+          fi
+          sleep 1
+        done
+
+    - name: Verify Postfix is running
+      run: |
+        docker exec postfix-test supervisorctl status postfix
+        docker exec postfix-test postconf myhostname | grep mail.example.com
+
+    - name: Verify PostSRSd is running
+      run: docker exec postfix-test supervisorctl status postsrs
+
+    - name: Verify SMTP responds on port 25
+      run: |
+        response=$(docker exec postfix-test bash -c 'echo QUIT | nc -w 5 127.0.0.1 25')
+        echo "$response"
+        echo "$response" | grep -q "220"
+
+    - name: Verify SRS config contains domain
+      run: docker exec postfix-test grep 'mail.example.com' /etc/postsrsd.conf
+
+    - name: Show logs on failure
+      if: failure()
+      run: docker logs postfix-test
+
+    - name: Cleanup
+      if: always()
+      run: docker rm -f postfix-test || true
