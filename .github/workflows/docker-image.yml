@@ -84,6 +84,18 @@ jobs:
         docker exec postfix-test grep -q 'score INVALID_DATE 0' /etc/spamassassin/local.cf
         echo "Milter setup verified"
 
+    - name: Verify milter scripts are present and executable
+      run: |
+        for script in spamd.sh sa_learn.sh spamass.sh postgrey.sh opendkim.sh opendmarc.sh create_opendkim_conf.sh healthcheck.sh; do
+          docker exec postfix-test test -x /scripts/$script || { echo "FAIL: /scripts/$script not executable"; exit 1; }
+          echo "OK: /scripts/$script"
+        done
+        for spec in dkim_milter_test_spec.lua dmarc_milter_test_spec.lua spamass_milter_test_spec.lua; do
+          docker exec postfix-test test -f /scripts/$spec || { echo "FAIL: /scripts/$spec missing"; exit 1; }
+          echo "OK: /scripts/$spec"
+        done
+        echo "All milter scripts verified"
+
     - name: Show logs on failure
       if: failure()
       run: docker logs postfix-test
