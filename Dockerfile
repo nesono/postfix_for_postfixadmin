@@ -8,6 +8,13 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
     postfix-mysql  \
     postfix-policyd-spf-python \
     postsrsd \
+    rsyslog \
+    postgrey  \
+    spamassassin \
+    spamass-milter  \
+    opendmarc  \
+    opendkim  \
+    miltertest \
     supervisor  \
     netcat-traditional  \
     && \
@@ -17,6 +24,19 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
     passwd -l vmail && \
     mkdir /srv/mail && \
     chown vmail:vmail /srv/mail
+# Milter-specific setup:
+# - Create per-user SpamAssassin database directory
+# - Add syslog user to debian-spamd group for spam database access
+#   (syslog has same uid as postfix, needed for milter socket permissions)
+# - Relax SpamAssassin date header rules to reduce false positives from automated senders
+RUN mkdir -p /vhome/users/ && \
+    chown -R debian-spamd:debian-spamd /vhome/users && \
+    usermod -aG debian-spamd syslog && \
+    echo "" >> /etc/spamassassin/local.cf && \
+    echo "# Disable strict Date header rules to allow emails from automated senders" >> /etc/spamassassin/local.cf && \
+    echo "score MISSING_DATE 0" >> /etc/spamassassin/local.cf && \
+    echo "score INVALID_DATE 0" >> /etc/spamassassin/local.cf
+
 # Beware that the vmail user has a dependency to the infrastructure repo
 # if you change the id information here, you will have to adapt the
 # infrastructure repo, too
@@ -28,7 +48,7 @@ EXPOSE 587
 EXPOSE 465
 EXPOSE 25
 
-VOLUME [ "/var/mail", "/var/spool/postfix", "/etc/postfix", "/etc/opendkim/keys" ]
+VOLUME [ "/var/mail", "/var/spool/postfix", "/etc/postfix", "/etc/opendkim/keys", "/vhome/users" ]
 
 COPY scripts/* /scripts/
 COPY configs/* /etc/

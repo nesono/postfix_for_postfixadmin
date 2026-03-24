@@ -65,6 +65,25 @@ jobs:
     - name: Verify SRS config contains domain
       run: docker exec postfix-test grep 'mail.example.com' /etc/default/postsrsd
 
+    - name: Verify milter packages are installed
+      run: |
+        docker exec postfix-test dpkg -l postgrey | grep -q '^ii'
+        docker exec postfix-test dpkg -l spamassassin | grep -q '^ii'
+        docker exec postfix-test dpkg -l spamass-milter | grep -q '^ii'
+        docker exec postfix-test dpkg -l opendmarc | grep -q '^ii'
+        docker exec postfix-test dpkg -l opendkim | grep -q '^ii'
+        docker exec postfix-test dpkg -l miltertest | grep -q '^ii'
+        docker exec postfix-test dpkg -l rsyslog | grep -q '^ii'
+        echo "All milter packages verified"
+
+    - name: Verify milter setup (vhome directory and SpamAssassin config)
+      run: |
+        docker exec postfix-test test -d /vhome/users
+        docker exec postfix-test stat -c '%U:%G' /vhome/users | grep -q 'debian-spamd:debian-spamd'
+        docker exec postfix-test grep -q 'score MISSING_DATE 0' /etc/spamassassin/local.cf
+        docker exec postfix-test grep -q 'score INVALID_DATE 0' /etc/spamassassin/local.cf
+        echo "Milter setup verified"
+
     - name: Show logs on failure
       if: failure()
       run: docker logs postfix-test
