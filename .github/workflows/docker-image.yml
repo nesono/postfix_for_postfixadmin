@@ -96,6 +96,13 @@ jobs:
         done
         echo "All milter scripts verified"
 
+    - name: Verify milter services are managed by supervisor
+      run: |
+        for svc in rsyslog spamd sa_learn postgrey spamass opendkim opendmarc; do
+          docker exec postfix-test supervisorctl -c /etc/supervisord.conf status $svc
+        done
+        echo "All milter services registered in supervisor"
+
     - name: Show logs on failure
       if: failure()
       run: docker logs postfix-test
