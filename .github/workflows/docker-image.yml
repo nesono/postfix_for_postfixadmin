@@ -110,3 +110,111 @@ jobs:
     - name: Cleanup
       if: always()
       run: docker rm -f postfix-test || true
+
+  milter-smoke-test:
+
+    runs-on: ubuntu-latest
+    needs: build-and-smoke-test
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag postfix-milter-test
+
+    - name: Create dummy credential and DKIM key files
+      run: |
+        echo "testuser" > /tmp/sql_user.txt
+        echo "testpass" > /tmp/sql_password.txt
+        mkdir -p /tmp/dkim-keys
+        openssl genrsa -out /tmp/dkim-keys/mail.private 2048 2>/dev/null
+
+    - name: Start container with milters enabled
+      run: |
+        docker run -d --name milter-test \
+          -e MYHOSTNAME=mail.example.com \
+          -e MYNETWORKS="127.0.0.0/8" \
+          -e SQL_USER_FILE=/tmp/sql_user.txt \
+          -e SQL_PASSWORD_FILE=/tmp/sql_password.txt \
+          -e SQL_HOST=127.0.0.1 \
+          -e SQL_DB_NAME=postfix \
+          -e SPAMHAUS_DISABLE=1 \
+          -e POSTGREY_SOCKET_PATH=private/postgrey \
+          -e SPAMASS_SOCKET_PATH=private/spamass \
+          -e DKIM_SOCKET_PATH=private/opendkim \
+          -e DKIM_DOMAINS=example.com \
+          -e DKIM_SELECTOR=mail \
+          -e DKIM_KEY_PATH=/etc/opendkim/keys/mail.private \
+          -e DMARC_SOCKET_PATH=private/opendmarc \
+          -e MAIL_HOSTNAME=mail.example.com \
+          -v /tmp/sql_user.txt:/tmp/sql_user.txt:ro \
+          -v /tmp/sql_password.txt:/tmp/sql_password.txt:ro \
+          -v /tmp/dkim-keys:/etc/opendkim/keys:ro \
+          -p 2526:25 \
+          postfix-milter-test
+
+    - name: Wait for services to start
+      run: |
+        for i in $(seq 1 30); do
+          if docker exec milter-test supervisorctl -c /etc/supervisord.conf status | grep -q RUNNING; then
+            echo "Services started after ${i}s"
+            break
+          fi
+          sleep 1
+        done
+
+    - name: Verify all services are running
+      run: |
+        sleep 10
+        docker exec milter-test supervisorctl -c /etc/supervisord.conf status
+        for svc in postfix postsrs rsyslog spamd sa_learn postgrey spamass opendkim opendmarc; do
+          status=$(docker exec milter-test supervisorctl -c /etc/supervisord.conf status $svc | awk '{print $2}')
+          echo "$svc: $status"
+          if [[ "$status" != "RUNNING" ]]; then
+            echo "FAIL: $svc is not RUNNING (status: $status)"
+            exit 1
+          fi
+        done
+        echo "All services running"
+
+    - name: Verify SMTP responds on port 25
+      run: |
+        response=$(docker exec milter-test bash -c 'echo QUIT | nc -w 5 127.0.0.1 25')
+        echo "$response"
+        echo "$response" | grep -q "220"
+
+    - name: Verify milter socket directories exist with correct ownership
+      run: |
+        docker exec milter-test stat -c '%U:%G' /var/spool/postfix/private | grep -q 'syslog:opendkim'
+        echo "Socket directory ownership verified"
+
+    - name: Verify OpenDKIM config was generated
+      run: |
+        docker exec milter-test test -f /etc/opendkim.conf
+        docker exec milter-test grep -q 'example.com' /etc/opendkim/KeyTable
+        docker exec milter-test grep -q 'example.com' /etc/opendkim/SigningTable
+        echo "OpenDKIM config verified"
+
+    - name: Verify OpenDMARC config was patched
+      run: |
+        docker exec milter-test grep -q 'Socket local:/var/spool/postfix/private/opendmarc' /etc/opendmarc.conf
+        docker exec milter-test grep -q 'TrustedAuthservIDs mail.example.com' /etc/opendmarc.conf
+        echo "OpenDMARC config verified"
+
+    - name: Verify rsyslog imklog is disabled
+      run: |
+        docker exec milter-test grep -q '^#module(load="imklog' /etc/rsyslog.conf
+        echo "rsyslog imklog disabled"
+
+    - name: Verify postfix is in opendkim group
+      run: |
+        docker exec milter-test id postfix | grep -q opendkim
+        echo "postfix user is in opendkim group"
+
+    - name: Show logs on failure
+      if: failure()
+      run: docker logs milter-test
+
+    - name: Cleanup
+      if: always()
+      run: docker rm -f milter-test || true

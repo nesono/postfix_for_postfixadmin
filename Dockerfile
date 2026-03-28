@@ -10,6 +10,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
     postsrsd \
     rsyslog \
     postgrey  \
+    spamd \
     spamassassin \
     spamass-milter  \
     opendmarc  \
