@@ -5,14 +5,17 @@ set -x
 . /scripts/common.sh
 . /scripts/sql_document_creators.sh
 
-# patch SRS configuration
-echo "SRS_DOMAIN=$MYHOSTNAME" >> /etc/default/postsrsd
-
 echo_start_banner
 
 # basic configuration
 if [[ -z "${MYHOSTNAME:-}" ]]; then (>&2 echo "Error: env var MYHOSTNAME not set" && exit 1); fi
 if [[ -z "${MYNETWORKS:-}" ]]; then (>&2 echo "Error: env var MYNETWORKS not set" && exit 1); fi
+
+# patch SRS configuration (postsrsd v1 on Ubuntu 24.04 uses /etc/default/postsrsd)
+if ! grep -q "^SRS_DOMAIN=" /etc/default/postsrsd; then
+  echo "SRS_DOMAIN=${MYHOSTNAME}" >> /etc/default/postsrsd
+fi
+
 do_postconf -e "myhostname=${MYHOSTNAME}"
 do_postconf -e "mynetworks=${MYNETWORKS}"
 do_postconf -e 'mydestination = $myhostname, localhost.localdomain, localhost'
@@ -76,21 +79,29 @@ if [[ -n "${SPF_ENABLE:-}" ]]; then
   fi
   RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}check_policy_service unix:private/policyd-spf"
   do_postconf -e 'policyd-spf_time_limit=3600'
-  cat <<EOF >> /etc/postfix/master.cf
+  if ! grep -q '^policyd-spf' /etc/postfix/master.cf; then
+    cat <<EOF >> /etc/postfix/master.cf
 policyd-spf  unix  -       n       n       -       0       spawn
     user=policyd-spf argv=/usr/bin/policyd-spf
 EOF
+  fi
 fi
 
 
 if [[ -n "${SMTPS_ENABLE:-}" ]]; then
-  cat <<EOF >> /etc/postfix/master.cf
+  if ! grep -q '^smtps' /etc/postfix/master.cf; then
+    if [[ -n "${AUTHORIZED_SMTPD_XCLIENT_HOSTS:-}" ]]; then
+      cat <<EOF >> /etc/postfix/master.cf
+smtps     inet  n       -       -       -       -       smtpd
+  -o smtpd_tls_wrappermode=yes
+  -o smtpd_authorized_xclient_hosts=${AUTHORIZED_SMTPD_XCLIENT_HOSTS}
+EOF
+    else
+      cat <<EOF >> /etc/postfix/master.cf
 smtps     inet  n       -       -       -       -       smtpd
   -o smtpd_tls_wrappermode=yes
 EOF
-  # Patch the smtp line to allow xclient from specific hosts - smtps version
-  if [[ -n "${AUTHORIZED_SMTPD_XCLIENT_HOSTS:-}" ]]; then
-    echo "  -o smtpd_authorized_xclient_hosts=${AUTHORIZED_SMTPD_XCLIENT_HOSTS}" >> /etc/postfix/master.cf
+    fi
   fi
 fi
 
@@ -194,18 +205,17 @@ fi
 
 
 # Patch the smtp and submission lines to allow xclient from specific hosts
+# This is idempotent: only adds the -o line if not already present after the service line
 if [[ -n "${AUTHORIZED_SMTPD_XCLIENT_HOSTS:-}" ]]; then
+  XCLIENT_OPT="  -o smtpd_authorized_xclient_hosts=${AUTHORIZED_SMTPD_XCLIENT_HOSTS}"
   # smtp line
-  SMTP_LINE=$(cat /etc/postfix/master.cf | grep "^smtp\s\+inet")
-  sed -i "s|^$SMTP_LINE|# $SMTP_LINE|" /etc/postfix/master.cf
-  echo "$SMTP_LINE" >> /etc/postfix/master.cf
-  echo "  -o smtpd_authorized_xclient_hosts=${AUTHORIZED_SMTPD_XCLIENT_HOSTS}" >> /etc/postfix/master.cf
-
+  if ! grep -q 'smtpd_authorized_xclient_hosts' <(grep -A1 '^smtp\s\+inet' /etc/postfix/master.cf); then
+    sed -i "/^smtp\s\+inet/a\\${XCLIENT_OPT}" /etc/postfix/master.cf
+  fi
   # submission line
-  SUBMISSION_LINE=$(cat /etc/postfix/master.cf | grep "^submission\s\+inet")
-  sed -i "s|^$SUBMISSION_LINE|# $SUBMISSION_LINE|" /etc/postfix/master.cf
-  echo "$SUBMISSION_LINE" >> /etc/postfix/master.cf
-  echo "  -o smtpd_authorized_xclient_hosts=${AUTHORIZED_SMTPD_XCLIENT_HOSTS}" >> /etc/postfix/master.cf
+  if ! grep -q 'smtpd_authorized_xclient_hosts' <(grep -A1 '^submission\s\+inet' /etc/postfix/master.cf); then
+    sed -i "/^submission\s\+inet/a\\${XCLIENT_OPT}" /etc/postfix/master.cf
+  fi
 fi
 
 # run the postfix instance configuration taken from the /etc/init.d/postfix script
