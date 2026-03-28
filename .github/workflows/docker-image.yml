@@ -122,7 +122,7 @@ jobs:
           postfix-smoke-test
         sleep 5
         # Save counts after first start
-        MASTER_LINES_1=$(docker exec idem-test wc -l < /etc/postfix/master.cf)
+        MASTER_LINES_1=$(docker exec idem-test bash -c 'wc -l < /etc/postfix/master.cf')
         XCLIENT_1=$(docker exec idem-test grep -c smtpd_authorized_xclient_hosts /etc/postfix/master.cf)
         SPF_1=$(docker exec idem-test grep -c '^policyd-spf' /etc/postfix/master.cf)
         SMTPS_1=$(docker exec idem-test grep -c '^smtps' /etc/postfix/master.cf)
@@ -131,7 +131,7 @@ jobs:
         docker restart idem-test
         sleep 5
         # Compare counts after restart
-        MASTER_LINES_2=$(docker exec idem-test wc -l < /etc/postfix/master.cf)
+        MASTER_LINES_2=$(docker exec idem-test bash -c 'wc -l < /etc/postfix/master.cf')
         XCLIENT_2=$(docker exec idem-test grep -c smtpd_authorized_xclient_hosts /etc/postfix/master.cf)
         SPF_2=$(docker exec idem-test grep -c '^policyd-spf' /etc/postfix/master.cf)
         SMTPS_2=$(docker exec idem-test grep -c '^smtps' /etc/postfix/master.cf)
