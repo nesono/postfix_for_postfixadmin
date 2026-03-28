@@ -103,10 +103,58 @@ jobs:
         done
         echo "All milter services registered in supervisor"
 
+    - name: Verify entrypoint is idempotent (master.cf not mangled on restart)
+      run: |
+        docker rm -f idem-test 2>/dev/null || true
+        docker run -d --name idem-test \
+          -e MYHOSTNAME=mail.example.com \
+          -e MYNETWORKS="127.0.0.0/8" \
+          -e SQL_USER_FILE=/tmp/sql_user.txt \
+          -e SQL_PASSWORD_FILE=/tmp/sql_password.txt \
+          -e SQL_HOST=127.0.0.1 \
+          -e SQL_DB_NAME=postfix \
+          -e SPAMHAUS_DISABLE=1 \
+          -e SPF_ENABLE=1 \
+          -e SMTPS_ENABLE=1 \
+          -e AUTHORIZED_SMTPD_XCLIENT_HOSTS=172.20.0.1 \
+          -v /tmp/sql_user.txt:/tmp/sql_user.txt:ro \
+          -v /tmp/sql_password.txt:/tmp/sql_password.txt:ro \
+          postfix-smoke-test
+        sleep 5
+        # Save counts after first start
+        MASTER_LINES_1=$(docker exec idem-test wc -l < /etc/postfix/master.cf)
+        XCLIENT_1=$(docker exec idem-test grep -c smtpd_authorized_xclient_hosts /etc/postfix/master.cf)
+        SPF_1=$(docker exec idem-test grep -c '^policyd-spf' /etc/postfix/master.cf)
+        SMTPS_1=$(docker exec idem-test grep -c '^smtps' /etc/postfix/master.cf)
+        SRS_1=$(docker exec idem-test grep -c 'SRS_DOMAIN' /etc/default/postsrsd)
+        # Restart container (re-runs entrypoint)
+        docker restart idem-test
+        sleep 5
+        # Compare counts after restart
+        MASTER_LINES_2=$(docker exec idem-test wc -l < /etc/postfix/master.cf)
+        XCLIENT_2=$(docker exec idem-test grep -c smtpd_authorized_xclient_hosts /etc/postfix/master.cf)
+        SPF_2=$(docker exec idem-test grep -c '^policyd-spf' /etc/postfix/master.cf)
+        SMTPS_2=$(docker exec idem-test grep -c '^smtps' /etc/postfix/master.cf)
+        SRS_2=$(docker exec idem-test grep -c 'SRS_DOMAIN' /etc/default/postsrsd)
+        echo "master.cf lines: $MASTER_LINES_1 -> $MASTER_LINES_2"
+        echo "xclient: $XCLIENT_1 -> $XCLIENT_2"
+        echo "policyd-spf: $SPF_1 -> $SPF_2"
+        echo "smtps: $SMTPS_1 -> $SMTPS_2"
+        echo "SRS_DOMAIN: $SRS_1 -> $SRS_2"
+        [[ "$MASTER_LINES_1" == "$MASTER_LINES_2" ]] || { echo "FAIL: master.cf grew after restart"; exit 1; }
+        [[ "$XCLIENT_1" == "$XCLIENT_2" ]] || { echo "FAIL: xclient lines duplicated"; exit 1; }
+        [[ "$SPF_1" == "$SPF_2" ]] || { echo "FAIL: policyd-spf duplicated"; exit 1; }
+        [[ "$SMTPS_1" == "$SMTPS_2" ]] || { echo "FAIL: smtps duplicated"; exit 1; }
+        [[ "$SRS_1" == "$SRS_2" ]] || { echo "FAIL: SRS_DOMAIN duplicated"; exit 1; }
+        echo "Idempotency verified"
+        docker rm -f idem-test
+
     - name: Show logs on failure
       if: failure()
       run: docker logs postfix-test
 
     - name: Cleanup
       if: always()
-      run: docker rm -f postfix-test || true
+      run: |
+        docker rm -f postfix-test || true
+        docker rm -f idem-test || true
