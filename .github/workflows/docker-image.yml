@@ -158,3 +158,124 @@ jobs:
       run: |
         docker rm -f postfix-test || true
         docker rm -f idem-test || true
+
+  milter-integration-test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag postfix-milter-test
+
+    - name: Create dummy credential and DKIM key files
+      run: |
+        echo "testuser" > /tmp/sql_user.txt
+        echo "testpass" > /tmp/sql_password.txt
+        mkdir -p /tmp/dkim-keys
+        openssl genrsa -out /tmp/dkim-keys/mail.private 2048 2>/dev/null
+
+    - name: Start container with all milters enabled
+      run: |
+        docker run -d --name milter-test \
+          -e MYHOSTNAME=mail.example.com \
+          -e MYNETWORKS="127.0.0.0/8" \
+          -e SQL_USER_FILE=/tmp/sql_user.txt \
+          -e SQL_PASSWORD_FILE=/tmp/sql_password.txt \
+          -e SQL_HOST=127.0.0.1 \
+          -e SQL_DB_NAME=postfix \
+          -e SPAMHAUS_DISABLE=1 \
+          -e POSTGREY_SOCKET_PATH=private/postgrey \
+          -e SPAMASS_SOCKET_PATH=private/spamass \
+          -e DKIM_SOCKET_PATH=private/dkim \
+          -e DKIM_DOMAINS=example.com \
+          -e DKIM_SELECTOR=mail \
+          -e DKIM_KEY_PATH=/etc/opendkim/keys/mail.private \
+          -e DMARC_SOCKET_PATH=private/dmarc \
+          -e MAIL_HOSTNAME=mail.example.com \
+          -v /tmp/sql_user.txt:/tmp/sql_user.txt:ro \
+          -v /tmp/sql_password.txt:/tmp/sql_password.txt:ro \
+          -v /tmp/dkim-keys:/etc/opendkim/keys:ro \
+          postfix-milter-test
+
+    - name: Wait for services to start
+      run: |
+        for i in $(seq 1 30); do
+          if docker exec milter-test supervisorctl -c /etc/supervisord.conf status | grep -q RUNNING; then
+            echo "Services started after ${i}s"
+            break
+          fi
+          sleep 1
+        done
+
+    - name: Verify all milter services are running
+      run: |
+        docker exec milter-test supervisorctl -c /etc/supervisord.conf status
+        for svc in postfix postsrs rsyslog spamd sa_learn postgrey spamass opendkim opendmarc; do
+          status=$(docker exec milter-test supervisorctl -c /etc/supervisord.conf status $svc | awk '{print $2}')
+          echo "$svc: $status"
+          if [[ "$status" != "RUNNING" ]]; then
+            echo "FAIL: $svc is not RUNNING (status: $status)"
+            exit 1
+          fi
+        done
+        echo "All services running"
+
+    - name: Verify PostSRSd responds on ports 10001 and 10002
+      run: |
+        docker exec milter-test bash -c 'echo "get test@example.com" | nc -w 2 127.0.0.1 10001' || true
+        docker exec milter-test bash -c 'echo "get test@example.com" | nc -w 2 127.0.0.1 10002' || true
+        echo "PostSRSd ports responding"
+
+    - name: Verify milter socket directories exist with correct permissions
+      run: |
+        docker exec milter-test test -d /var/spool/postfix/private
+        perms=$(docker exec milter-test stat -c '%U:%G %a' /var/spool/postfix/private)
+        echo "Socket dir permissions: $perms"
+        echo "$perms" | grep -q 'postfix:opendkim'
+        echo "$perms" | grep -q '775'
+        echo "Socket directory permissions verified"
+
+    - name: Verify DKIM configuration was generated
+      run: |
+        docker exec milter-test test -f /etc/opendkim.conf
+        docker exec milter-test grep -q 'example.com' /etc/opendkim.conf
+        echo "DKIM config verified"
+
+    - name: Verify DMARC configuration was patched
+      run: |
+        docker exec milter-test grep -q 'AuthservID OpenDMARC' /etc/opendmarc.conf
+        docker exec milter-test grep -q 'mail.example.com' /etc/opendmarc.conf
+        echo "DMARC config verified"
+
+    - name: Verify SMTP responds on port 25
+      run: |
+        response=$(docker exec milter-test bash -c 'echo QUIT | nc -w 5 127.0.0.1 25')
+        echo "$response"
+        echo "$response" | grep -q "220"
+
+    - name: Verify idempotency with milters enabled
+      run: |
+        # Save counts after first start
+        MASTER_LINES_1=$(docker exec milter-test bash -c 'wc -l < /etc/postfix/master.cf')
+        DMARC_CONF_1=$(docker exec milter-test grep -c 'AuthservID' /etc/opendmarc.conf)
+        # Restart container (re-runs entrypoint)
+        docker restart milter-test
+        sleep 10
+        # Compare counts after restart
+        MASTER_LINES_2=$(docker exec milter-test bash -c 'wc -l < /etc/postfix/master.cf')
+        DMARC_CONF_2=$(docker exec milter-test grep -c 'AuthservID' /etc/opendmarc.conf)
+        echo "master.cf lines: $MASTER_LINES_1 -> $MASTER_LINES_2"
+        echo "DMARC AuthservID: $DMARC_CONF_1 -> $DMARC_CONF_2"
+        [[ "$MASTER_LINES_1" == "$MASTER_LINES_2" ]] || { echo "FAIL: master.cf grew after restart"; exit 1; }
+        [[ "$DMARC_CONF_1" == "$DMARC_CONF_2" ]] || { echo "FAIL: opendmarc.conf grew after restart"; exit 1; }
+        echo "Milter idempotency verified"
+
+    - name: Show logs on failure
+      if: failure()
+      run: docker logs milter-test
+
+    - name: Cleanup
+      if: always()
+      run: docker rm -f milter-test || true

@@ -221,5 +221,72 @@ fi
 # run the postfix instance configuration taken from the /etc/init.d/postfix script
 /usr/lib/postfix/configure-instance.sh
 
+# --- Milter initialization (merged from postfix-milters) ---
+
+# Patch rsyslogd to disable kernel message logging
+sed 's/^module(load=\"imklog\".*)/#&/' -i.bak /etc/rsyslog.conf
+
+# Validate and log milter socket paths
+if [[ -n "${POSTGREY_SOCKET_PATH:-}" ]]; then
+  echo "Postgrey socket path set: ${POSTGREY_SOCKET_PATH}"
+fi
+if [[ -n "${SPAMASS_SOCKET_PATH:-}" ]]; then
+  echo "Spamass socket path set: ${SPAMASS_SOCKET_PATH}"
+fi
+if [[ -n "${DKIM_SOCKET_PATH:-}" ]]; then
+  echo "DKIM socket path set: ${DKIM_SOCKET_PATH}"
+  if [[ -z "${DKIM_DOMAINS:-}" ]]; then (>&2 echo "Error: env var DKIM_DOMAINS not set" && exit 1); fi
+  if [[ -z "${DKIM_SELECTOR:-}" ]]; then (>&2 echo "Error: env var DKIM_SELECTOR not set" && exit 1); fi
+  if [[ -z "${DKIM_KEY_PATH:-}" ]]; then (>&2 echo "Error: env var DKIM_KEY_PATH not set" && exit 1); fi
+
+  # Create opendkim.conf from template
+  /scripts/create_opendkim_conf.sh
+fi
+
+# Patch /etc/opendmarc.conf
+if [[ -n "${DMARC_SOCKET_PATH:-}" ]]; then
+  echo "DMARC socket path is set: ${DMARC_SOCKET_PATH}"
+  if [[ -z "${MAIL_HOSTNAME:-}" ]]; then (>&2 echo "Error: env var MAIL_HOSTNAME not set" && exit 1); fi
+
+  # Configuration taken from https://www.linuxbabe.com/mail-server/opendmarc-postfix-ubuntu
+  sed 's@^Socket local:.*@Socket local:/var/spool/postfix/'"${DMARC_SOCKET_PATH}"'@' -i.bak /etc/opendmarc.conf
+  if ! grep -q '^AuthservID OpenDMARC' /etc/opendmarc.conf; then
+    cat <<EOF >> /etc/opendmarc.conf
+AuthservID OpenDMARC
+TrustedAuthservIDs ${MAIL_HOSTNAME}
+RejectFailures true
+IgnoreAuthenticatedClients true
+RequiredHeaders    true
+SPFSelfValidate true
+EOF
+  fi
+fi
+
+# Ensure the directories for the milter sockets exist
+if [[ -n "${POSTGREY_SOCKET_PATH:-}" ]]; then mkdir -p /var/spool/postfix/"${POSTGREY_SOCKET_PATH%/*}"; fi
+if [[ -n "${SPAMASS_SOCKET_PATH:-}" ]]; then mkdir -p /var/spool/postfix/"${SPAMASS_SOCKET_PATH%/*}"; fi
+if [[ -n "${DKIM_SOCKET_PATH:-}" ]]; then mkdir -p /var/spool/postfix/"${DKIM_SOCKET_PATH%/*}"; fi
+if [[ -n "${DMARC_SOCKET_PATH:-}" ]]; then mkdir -p /var/spool/postfix/"${DMARC_SOCKET_PATH%/*}"; fi
+
+# Fix ownership for milter socket directories and SpamAssassin
+# Milter processes (syslog user) create unix sockets inside /var/spool/postfix/private/.
+# Postfix requires /var/spool/postfix/private to be owned by postfix.
+# We set the group to opendkim and make it group-writable so milter processes can
+# create sockets there. Both syslog and postfix are added to opendkim group.
+usermod -aG opendkim postfix
+usermod -aG opendkim syslog
+# Collect unique socket parent directories and fix their permissions
+declare -A SOCKET_DIRS
+for path in "${POSTGREY_SOCKET_PATH:-}" "${SPAMASS_SOCKET_PATH:-}" "${DKIM_SOCKET_PATH:-}" "${DMARC_SOCKET_PATH:-}"; do
+  if [[ -n "${path}" ]]; then
+    SOCKET_DIRS["/var/spool/postfix/${path%/*}"]=1
+  fi
+done
+for dir in "${!SOCKET_DIRS[@]}"; do
+  chown postfix:opendkim "${dir}"
+  chmod 775 "${dir}"
+done
+chown -R debian-spamd:debian-spamd /var/lib/spamass-milter
+
 echo_exec_banner
 exec supervisord -c /etc/supervisord.conf
