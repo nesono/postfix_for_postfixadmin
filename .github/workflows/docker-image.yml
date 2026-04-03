@@ -254,7 +254,11 @@ jobs:
     - name: Verify DKIM configuration was generated
       run: |
         docker exec milter-test test -f /etc/opendkim.conf
-        docker exec milter-test grep -q 'example.com' /etc/opendkim.conf
+        docker exec milter-test grep -q 'private/dkim' /etc/opendkim.conf
+        docker exec milter-test test -f /etc/opendkim/KeyTable
+        docker exec milter-test grep -q 'example.com' /etc/opendkim/KeyTable
+        docker exec milter-test test -f /etc/opendkim/SigningTable
+        docker exec milter-test grep -q 'example.com' /etc/opendkim/SigningTable
         echo "DKIM config verified"
 
     - name: Verify DMARC configuration was patched
