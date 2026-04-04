@@ -11,6 +11,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update &&  \
     rsyslog \
     postgrey  \
     spamassassin \
+    spamd \
     spamass-milter  \
     opendmarc  \
     opendkim  \
