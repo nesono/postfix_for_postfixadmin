@@ -18,9 +18,9 @@ while true; do
       if [ -d "${junkfolder}" ]; then
         echo "sa_learn: Learning Spam from ${junkfolder} for user ${mailaccount}"
         sa-learn --spam --dbpath "${spamdbpath}/bayes" "${junkfolder}" | \
-          while read line; do echo "sa_learn: $line"; done
+          while read line; do echo "sa_learn: $line"; done || true
         sa-learn --sync | \
-          while read line; do echo "sa_learn: $line"; done
+          while read line; do echo "sa_learn: $line"; done || true
       else
         echo "sa_learn: No Junk folder found - skipping"
       fi
@@ -29,9 +29,9 @@ while true; do
       if [ -d "${hamfolder}" ]; then
         echo "sa_learn: Learning Ham from ${hamfolder} for user ${mailaccount}"
         sa-learn --ham --dbpath "${spamdbpath}/bayes" --progress "${hamfolder}" | \
-          while read line; do echo "sa_learn: $line"; done
+          while read line; do echo "sa_learn: $line"; done || true
         sa-learn --sync | \
-          while read line; do echo "sa_learn: $line"; done
+          while read line; do echo "sa_learn: $line"; done || true
       else
         echo "sa_learn: No Archive folder found - skipping"
       fi
