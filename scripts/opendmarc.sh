@@ -15,8 +15,8 @@ noop() {
 }
 
 if [[ -n "${DMARC_SOCKET_PATH:-}" ]]; then
-  # Keep in sync with postfix uid
-  /usr/sbin/opendmarc -f -c /etc/opendmarc.conf -u syslog  | \
+  # UserID is set in opendmarc.conf (patched by run.sh)
+  /usr/sbin/opendmarc -f -c /etc/opendmarc.conf  | \
     while read -r line; do echo "opendmarc: $line"; done
 else
   echo "INFO: Not running opendmarc, since no socket path is set"

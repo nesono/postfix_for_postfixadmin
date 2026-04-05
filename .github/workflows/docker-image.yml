@@ -251,6 +251,23 @@ jobs:
         echo "$perms" | grep -q '775'
         echo "Socket directory permissions verified"
 
+    - name: Verify milter sockets are accessible by postfix
+      run: |
+        # Wait for sockets to be created
+        for i in $(seq 1 15); do
+          if docker exec milter-test test -S /var/spool/postfix/private/dkim; then break; fi
+          sleep 1
+        done
+        # DKIM socket: must be group opendkim so postfix (in opendkim group) can access
+        dkim_perms=$(docker exec milter-test stat -c '%U:%G %a' /var/spool/postfix/private/dkim)
+        echo "DKIM socket: $dkim_perms"
+        echo "$dkim_perms" | grep -q 'opendkim'
+        # DMARC socket: same requirement
+        dmarc_perms=$(docker exec milter-test stat -c '%U:%G %a' /var/spool/postfix/private/dmarc)
+        echo "DMARC socket: $dmarc_perms"
+        echo "$dmarc_perms" | grep -q 'opendkim'
+        echo "Milter socket permissions verified"
+
     - name: Verify DKIM configuration was generated
       run: |
         docker exec milter-test test -f /etc/opendkim.conf

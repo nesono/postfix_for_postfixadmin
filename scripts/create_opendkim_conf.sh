@@ -28,8 +28,9 @@ OversignHeaders		From
 KeyTable                refile:/etc/opendkim/KeyTable
 SigningTable            refile:/etc/opendkim/SigningTable
 
-# Keep in sync with postfix uid
-UserID			syslog
+# Run as syslog user with opendkim group so postfix (in opendkim group) can
+# access the socket.  Requires the process to start as root (supervisor default).
+UserID			syslog:opendkim
 UMask			007
 
 Socket			local:/var/spool/postfix/${DKIM_SOCKET_PATH}
