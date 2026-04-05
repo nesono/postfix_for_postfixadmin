@@ -221,10 +221,20 @@ fi
 # run the postfix instance configuration taken from the /etc/init.d/postfix script
 /usr/lib/postfix/configure-instance.sh
 
+# Fix spool directory ownership (may be wrong if migrating from a separate milters container
+# that ran chown -R on the entire spool volume). Tolerates errors from missing non-essential
+# files (e.g., man pages stripped from the Docker image).
+postfix set-permissions || true
+
 # --- Milter initialization (merged from postfix-milters) ---
 
 # Patch rsyslogd to disable kernel message logging
 sed 's/^module(load=\"imklog\".*)/#&/' -i.bak /etc/rsyslog.conf
+# If /dev/log is already mounted from the host, disable rsyslog's imuxsock listener
+# to avoid "Address already in use"
+if [[ -S /dev/log ]]; then
+  sed -i 's/^module(load="imuxsock")/#&/' /etc/rsyslog.conf
+fi
 
 # Validate and log milter socket paths
 if [[ -n "${POSTGREY_SOCKET_PATH:-}" ]]; then
