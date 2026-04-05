@@ -218,12 +218,12 @@ if [[ -n "${AUTHORIZED_SMTPD_XCLIENT_HOSTS:-}" ]]; then
   fi
 fi
 
+# run the postfix instance configuration taken from the /etc/init.d/postfix script
+/usr/lib/postfix/configure-instance.sh
+
 # Fix spool directory ownership (may be wrong if migrating from a separate milters container
 # that ran chown -R on the entire spool volume)
 postfix set-permissions
-
-# run the postfix instance configuration taken from the /etc/init.d/postfix script
-/usr/lib/postfix/configure-instance.sh
 
 # --- Milter initialization (merged from postfix-milters) ---
 
