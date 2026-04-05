@@ -222,8 +222,9 @@ fi
 /usr/lib/postfix/configure-instance.sh
 
 # Fix spool directory ownership (may be wrong if migrating from a separate milters container
-# that ran chown -R on the entire spool volume)
-postfix set-permissions
+# that ran chown -R on the entire spool volume). Tolerates errors from missing non-essential
+# files (e.g., man pages stripped from the Docker image).
+postfix set-permissions || true
 
 # --- Milter initialization (merged from postfix-milters) ---
 
