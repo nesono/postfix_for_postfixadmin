@@ -148,12 +148,14 @@ if [[ -n "${RCP_RESTR:-}" ]]; then
   do_postconf -e "smtpd_recipient_restrictions=${RCP_RESTR:-}"
 fi
 
-# Add DKIM milter spec
+# Add DKIM milter spec (used for both inbound verification and outbound signing)
 if [[ -n "${DKIM_SOCKET_PATH:-}" ]]; then
   SMTPD_MILTERS="${SMTPD_MILTERS:+$SMTPD_MILTERS,}local:${DKIM_SOCKET_PATH}"
+  NON_SMTPD_MILTERS="${NON_SMTPD_MILTERS:+$NON_SMTPD_MILTERS,}local:${DKIM_SOCKET_PATH}"
 fi
 
-# Add DMARC milter spec
+# Add DMARC milter spec (inbound only — cleanup daemon lacks SASL auth context,
+# so IgnoreAuthenticatedClients would not work for non-smtpd milters)
 if [[ -n "${DMARC_SOCKET_PATH:-}" ]]; then
   SMTPD_MILTERS="${SMTPD_MILTERS:+$SMTPD_MILTERS,}local:${DMARC_SOCKET_PATH}"
 fi
@@ -165,7 +167,11 @@ if [[ -n "${SMTPD_MILTERS:-}" ]]; then
   do_postconf -e "smtpd_milters=${SMTPD_MILTERS}"
   do_postconf -e 'milter_default_action=accept'
   do_postconf -e 'milter_protocol=6'
-  do_postconf -e 'non_smtpd_milters=$smtpd_milters'
+fi
+if [[ -n "${NON_SMTPD_MILTERS:-}" ]]; then
+  echo "Activating non_smtpd_milters with:"
+  echo "   non_smtpd_milters=${NON_SMTPD_MILTERS}"
+  do_postconf -e "non_smtpd_milters=${NON_SMTPD_MILTERS}"
 fi
 
 if [[ -n "${DOVECOT_LMTP_PATH:-}" ]]; then
@@ -260,6 +266,9 @@ if [[ -n "${DMARC_SOCKET_PATH:-}" ]]; then
 
   # Configuration taken from https://www.linuxbabe.com/mail-server/opendmarc-postfix-ubuntu
   sed 's@^Socket local:.*@Socket local:/var/spool/postfix/'"${DMARC_SOCKET_PATH}"'@' -i.bak /etc/opendmarc.conf
+  # Replace default UserID and UMask so there are no duplicates
+  sed -i 's@^UserID opendmarc@UserID syslog:opendkim@' /etc/opendmarc.conf
+  sed -i 's@^UMask 0002@UMask 007@' /etc/opendmarc.conf
   if ! grep -q '^AuthservID OpenDMARC' /etc/opendmarc.conf; then
     cat <<EOF >> /etc/opendmarc.conf
 AuthservID OpenDMARC
@@ -268,8 +277,6 @@ RejectFailures true
 IgnoreAuthenticatedClients true
 RequiredHeaders    true
 SPFSelfValidate true
-UserID syslog:opendkim
-UMask 007
 EOF
   fi
 fi
