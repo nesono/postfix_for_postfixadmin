@@ -17,6 +17,7 @@ noop() {
 }
 
 if [[ -n "${SPAMASS_SOCKET_PATH:-}" ]]; then
+  umask 007
   /usr/sbin/spamass-milter -r 15 -p "${SPAMASS_SOCKET}" | \
     while read -r line; do echo "spamass-milter: $line"; done
 else
