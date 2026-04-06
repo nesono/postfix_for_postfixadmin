@@ -65,10 +65,8 @@ if [[ -z "${SPAMHAUS_DISABLE:-}" ]]; then
   RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}reject_rhsbl_sender dbl.spamhaus.org"
 fi
 
-# Add spamass milter spec
-if [[ -n "${SPAMASS_SOCKET_PATH:-}" ]]; then
-  RCP_RESTR="${RCP_RESTR:+$RCP_RESTR,}check_policy_service unix:${SPAMASS_SOCKET_PATH}"
-fi
+# spamass-milter is a milter (libmilter), not a policy service.
+# It is added to smtpd_milters below, not smtpd_recipient_restrictions.
 
 
 # Add SPF milter spec
@@ -148,30 +146,32 @@ if [[ -n "${RCP_RESTR:-}" ]]; then
   do_postconf -e "smtpd_recipient_restrictions=${RCP_RESTR:-}"
 fi
 
-# Add DKIM milter spec (used for both inbound verification and outbound signing)
+# Add DKIM milter spec
 if [[ -n "${DKIM_SOCKET_PATH:-}" ]]; then
   SMTPD_MILTERS="${SMTPD_MILTERS:+$SMTPD_MILTERS,}local:${DKIM_SOCKET_PATH}"
-  NON_SMTPD_MILTERS="${NON_SMTPD_MILTERS:+$NON_SMTPD_MILTERS,}local:${DKIM_SOCKET_PATH}"
 fi
 
-# Add DMARC milter spec (inbound only — cleanup daemon lacks SASL auth context,
-# so IgnoreAuthenticatedClients would not work for non-smtpd milters)
+# Add DMARC milter spec
 if [[ -n "${DMARC_SOCKET_PATH:-}" ]]; then
   SMTPD_MILTERS="${SMTPD_MILTERS:+$SMTPD_MILTERS,}local:${DMARC_SOCKET_PATH}"
 fi
 
+# Add spamass-milter (libmilter protocol, NOT a policy service)
+if [[ -n "${SPAMASS_SOCKET_PATH:-}" ]]; then
+  SMTPD_MILTERS="${SMTPD_MILTERS:+$SMTPD_MILTERS,}local:${SPAMASS_SOCKET_PATH}"
+fi
+
 # Configure SMTPD milters
+# All milters are smtpd-only.  Do NOT set non_smtpd_milters: the cleanup daemon
+# sees SRS-rewritten envelope senders that don't match any DKIM signing table
+# and would tempfail, and it lacks SASL auth context so DMARC's
+# IgnoreAuthenticatedClients has no effect.
 if [[ -n "${SMTPD_MILTERS:-}" ]]; then
   echo "Activating smtpd_milters with:"
   echo "   smtpd_milters=${SMTPD_MILTERS}"
   do_postconf -e "smtpd_milters=${SMTPD_MILTERS}"
   do_postconf -e 'milter_default_action=accept'
   do_postconf -e 'milter_protocol=6'
-fi
-if [[ -n "${NON_SMTPD_MILTERS:-}" ]]; then
-  echo "Activating non_smtpd_milters with:"
-  echo "   non_smtpd_milters=${NON_SMTPD_MILTERS}"
-  do_postconf -e "non_smtpd_milters=${NON_SMTPD_MILTERS}"
 fi
 
 if [[ -n "${DOVECOT_LMTP_PATH:-}" ]]; then
@@ -254,6 +254,16 @@ if [[ -n "${DKIM_SOCKET_PATH:-}" ]]; then
   if [[ -z "${DKIM_DOMAINS:-}" ]]; then (>&2 echo "Error: env var DKIM_DOMAINS not set" && exit 1); fi
   if [[ -z "${DKIM_SELECTOR:-}" ]]; then (>&2 echo "Error: env var DKIM_SELECTOR not set" && exit 1); fi
   if [[ -z "${DKIM_KEY_PATH:-}" ]]; then (>&2 echo "Error: env var DKIM_KEY_PATH not set" && exit 1); fi
+
+  # Docker secrets are mounted read-only as UID 101 (the old postfix UID before
+  # milter packages shifted it to 106).  opendkim runs as syslog (UID 102) and
+  # cannot read the secret directly.  Copy it to a readable location.
+  DKIM_KEY_RUNTIME="/etc/opendkim/keys/dkim.private"
+  mkdir -p /etc/opendkim/keys
+  cp "${DKIM_KEY_PATH}" "${DKIM_KEY_RUNTIME}"
+  chown syslog:opendkim "${DKIM_KEY_RUNTIME}"
+  chmod 440 "${DKIM_KEY_RUNTIME}"
+  DKIM_KEY_PATH="${DKIM_KEY_RUNTIME}"
 
   # Create opendkim.conf from template
   /scripts/create_opendkim_conf.sh
