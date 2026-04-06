@@ -268,6 +268,8 @@ RejectFailures true
 IgnoreAuthenticatedClients true
 RequiredHeaders    true
 SPFSelfValidate true
+UserID syslog:opendkim
+UMask 007
 EOF
   fi
 fi
@@ -297,6 +299,16 @@ for dir in "${!SOCKET_DIRS[@]}"; do
   chmod 775 "${dir}"
 done
 chown -R debian-spamd:debian-spamd /var/lib/spamass-milter
+
+# Fix Dovecot socket permissions: the Dovecot container creates auth and LMTP
+# sockets with its own UID (101), but in this container postfix has a different
+# UID (106 due to milter packages creating system users first).  Change ownership
+# so postfix can connect.
+for _sock in /var/spool/postfix/private/auth /var/spool/postfix/private/dovecot-lmtp; do
+  if [[ -S "$_sock" ]]; then
+    chown postfix:postfix "$_sock"
+  fi
+done
 
 echo_exec_banner
 exec supervisord -c /etc/supervisord.conf
