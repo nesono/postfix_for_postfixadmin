@@ -296,7 +296,7 @@ for path in "${POSTGREY_SOCKET_PATH:-}" "${SPAMASS_SOCKET_PATH:-}" "${DKIM_SOCKE
 done
 for dir in "${!SOCKET_DIRS[@]}"; do
   chown postfix:opendkim "${dir}"
-  chmod 775 "${dir}"
+  chmod 2775 "${dir}"
 done
 chown -R debian-spamd:debian-spamd /var/lib/spamass-milter
 
