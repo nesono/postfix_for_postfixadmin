@@ -258,8 +258,10 @@ if [[ -n "${DKIM_SOCKET_PATH:-}" ]]; then
   # Docker secrets are mounted read-only as UID 101 (the old postfix UID before
   # milter packages shifted it to 106).  opendkim runs as syslog (UID 102) and
   # cannot read the secret directly.  Copy it to a readable location.
-  DKIM_KEY_RUNTIME="/etc/opendkim/keys/dkim.private"
-  mkdir -p /etc/opendkim/keys
+  # Must not live under /etc/opendkim/keys because that directory may itself
+  # be the read-only Docker secret mount point.
+  DKIM_KEY_RUNTIME="/var/lib/opendkim/dkim.private"
+  mkdir -p /var/lib/opendkim
   cp "${DKIM_KEY_PATH}" "${DKIM_KEY_RUNTIME}"
   chown syslog:opendkim "${DKIM_KEY_RUNTIME}"
   chmod 440 "${DKIM_KEY_RUNTIME}"
