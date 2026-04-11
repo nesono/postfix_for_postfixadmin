@@ -286,12 +286,12 @@ jobs:
     - name: Verify DKIM key is readable by opendkim process
       run: |
         # The key must be copied from the secret mount and made readable by syslog
-        docker exec milter-test test -f /etc/opendkim/keys/dkim.private
-        key_perms=$(docker exec milter-test stat -c '%U:%G %a' /etc/opendkim/keys/dkim.private)
+        docker exec milter-test test -f /var/lib/opendkim/dkim.private
+        key_perms=$(docker exec milter-test stat -c '%U:%G %a' /var/lib/opendkim/dkim.private)
         echo "DKIM key permissions: $key_perms"
         echo "$key_perms" | grep -q 'syslog:opendkim'
         # KeyTable must point to the runtime copy, not the secret mount
-        docker exec milter-test grep -q '/etc/opendkim/keys/dkim.private' /etc/opendkim/KeyTable
+        docker exec milter-test grep -q '/var/lib/opendkim/dkim.private' /etc/opendkim/KeyTable
         echo "DKIM key accessible by opendkim"
 
     - name: Verify DMARC configuration was patched
