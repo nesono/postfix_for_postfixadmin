@@ -17,6 +17,8 @@ noop() {
 }
 
 if [[ -n "${SPAMASS_SOCKET_PATH:-}" ]]; then
+  # umask 007: socket gets mode 770 so the opendkim group (inherited from the
+  # setgid bit on the directory) has write access, allowing postfix to connect.
   umask 007
   /usr/sbin/spamass-milter -r 15 -p "${SPAMASS_SOCKET}" | \
     while read -r line; do echo "spamass-milter: $line"; done

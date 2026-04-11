@@ -283,11 +283,38 @@ jobs:
         docker exec milter-test grep -q 'example.com' /etc/opendkim/SigningTable
         echo "DKIM config verified"
 
+    - name: Verify DKIM key is readable by opendkim process
+      run: |
+        # The key must be copied from the secret mount and made readable by syslog
+        docker exec milter-test test -f /var/lib/opendkim/dkim.private
+        key_perms=$(docker exec milter-test stat -c '%U:%G %a' /var/lib/opendkim/dkim.private)
+        echo "DKIM key permissions: $key_perms"
+        echo "$key_perms" | grep -q 'syslog:opendkim'
+        # KeyTable must point to the runtime copy, not the secret mount
+        docker exec milter-test grep -q '/var/lib/opendkim/dkim.private' /etc/opendkim/KeyTable
+        echo "DKIM key accessible by opendkim"
+
     - name: Verify DMARC configuration was patched
       run: |
         docker exec milter-test grep -q 'AuthservID OpenDMARC' /etc/opendmarc.conf
         docker exec milter-test grep -q 'mail.example.com' /etc/opendmarc.conf
+        # Verify no duplicate UserID lines
+        count=$(docker exec milter-test grep -c '^UserID' /etc/opendmarc.conf)
+        echo "UserID lines: $count"
+        [[ "$count" -eq 1 ]] || { echo "FAIL: duplicate UserID in opendmarc.conf"; exit 1; }
         echo "DMARC config verified"
+
+    - name: Verify milter postfix configuration
+      run: |
+        # spamass-milter must be in smtpd_milters (milter protocol), NOT in
+        # smtpd_recipient_restrictions (policy delegation protocol)
+        docker exec milter-test postconf smtpd_milters | grep -q 'private/spamass'
+        docker exec milter-test postconf smtpd_recipient_restrictions | grep -vq 'spamass'
+        # non_smtpd_milters must NOT be set (SRS-rewritten senders break DKIM signing
+        # and cleanup daemon lacks SASL auth context for DMARC)
+        non_smtpd=$(docker exec milter-test postconf -h non_smtpd_milters)
+        [[ -z "$non_smtpd" ]] || { echo "FAIL: non_smtpd_milters should be empty, got: $non_smtpd"; exit 1; }
+        echo "Milter postfix config verified"
 
     - name: Verify SMTP responds on port 25
       run: |
