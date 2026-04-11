@@ -49,7 +49,7 @@ EXPOSE 587
 EXPOSE 465
 EXPOSE 25
 
-VOLUME [ "/var/mail", "/var/spool/postfix", "/etc/postfix", "/etc/opendkim/keys", "/vhome/users" ]
+VOLUME [ "/var/mail", "/var/spool/postfix", "/vhome/users" ]
 
 COPY scripts/* /scripts/
 COPY configs/* /etc/

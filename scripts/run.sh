@@ -172,6 +172,8 @@ if [[ -n "${SMTPD_MILTERS:-}" ]]; then
   do_postconf -e "smtpd_milters=${SMTPD_MILTERS}"
   do_postconf -e 'milter_default_action=accept'
   do_postconf -e 'milter_protocol=6'
+  # Explicitly clear non_smtpd_milters in case a previous deploy set it.
+  do_postconf -e 'non_smtpd_milters='
 fi
 
 if [[ -n "${DOVECOT_LMTP_PATH:-}" ]]; then
@@ -209,6 +211,17 @@ else
   echo "No TLS configured"
 fi
 
+
+# Disable milters on the submission port: authenticated outbound mail must not
+# pass through DKIM/DMARC milters because PostSRSd rewrites the envelope sender
+# to @smtp.nesono.com before cleanup runs the milters, and there is no DKIM key
+# for that domain.
+if [[ -n "${SMTPD_MILTERS:-}" ]]; then
+  MILTER_OFF_OPT="  -o smtpd_milters="
+  if ! grep -q 'smtpd_milters=' <(grep -A5 '^submission\s\+inet' /etc/postfix/master.cf); then
+    sed -i "/^submission\s\+inet/a\\${MILTER_OFF_OPT}" /etc/postfix/master.cf
+  fi
+fi
 
 # Patch the smtp and submission lines to allow xclient from specific hosts
 # This is idempotent: only adds the -o line if not already present after the service line
@@ -263,8 +276,8 @@ if [[ -n "${DKIM_SOCKET_PATH:-}" ]]; then
   DKIM_KEY_RUNTIME="/var/lib/opendkim/dkim.private"
   mkdir -p /var/lib/opendkim
   cp "${DKIM_KEY_PATH}" "${DKIM_KEY_RUNTIME}"
-  chown syslog:opendkim "${DKIM_KEY_RUNTIME}"
-  chmod 440 "${DKIM_KEY_RUNTIME}"
+  chown syslog:syslog "${DKIM_KEY_RUNTIME}"
+  chmod 400 "${DKIM_KEY_RUNTIME}"
   DKIM_KEY_PATH="${DKIM_KEY_RUNTIME}"
 
   # Create opendkim.conf from template

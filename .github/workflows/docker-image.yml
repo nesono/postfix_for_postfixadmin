@@ -289,7 +289,7 @@ jobs:
         docker exec milter-test test -f /var/lib/opendkim/dkim.private
         key_perms=$(docker exec milter-test stat -c '%U:%G %a' /var/lib/opendkim/dkim.private)
         echo "DKIM key permissions: $key_perms"
-        echo "$key_perms" | grep -q 'syslog:opendkim'
+        echo "$key_perms" | grep -q 'syslog:syslog'
         # KeyTable must point to the runtime copy, not the secret mount
         docker exec milter-test grep -q '/var/lib/opendkim/dkim.private' /etc/opendkim/KeyTable
         echo "DKIM key accessible by opendkim"
