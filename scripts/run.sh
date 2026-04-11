@@ -212,15 +212,12 @@ else
 fi
 
 
-# Disable milters on the submission port: authenticated outbound mail must not
-# pass through DKIM/DMARC milters because PostSRSd rewrites the envelope sender
-# to @smtp.nesono.com before cleanup runs the milters, and there is no DKIM key
-# for that domain.
-if [[ -n "${SMTPD_MILTERS:-}" ]]; then
-  MILTER_OFF_OPT="  -o smtpd_milters="
-  if ! grep -q 'smtpd_milters=' <(grep -A5 '^submission\s\+inet' /etc/postfix/master.cf); then
-    sed -i "/^submission\s\+inet/a\\${MILTER_OFF_OPT}" /etc/postfix/master.cf
-  fi
+# Disable SRS on the submission port: authenticated users' mail must keep its
+# original envelope sender so DKIM and SPF align for DMARC.  SRS is only needed
+# for forwarded mail, which goes through the smtp transport, not submission.
+SRS_OFF_OPT="  -o sender_canonical_maps="
+if ! grep -q 'sender_canonical_maps=' <(grep -A5 '^submission\s\+inet' /etc/postfix/master.cf); then
+  sed -i "/^submission\s\+inet/a\\${SRS_OFF_OPT}" /etc/postfix/master.cf
 fi
 
 # Patch the smtp and submission lines to allow xclient from specific hosts
