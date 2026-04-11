@@ -71,6 +71,7 @@ SendReports             yes
 RequiredHeaders        yes
 EOF
 
+mkdir -p "$(dirname "${KEY_TABLE}")"
 # Clear KeyTable
 rm -rf "${KEY_TABLE}"
 # Fill KeyTable
