@@ -1,3 +1,9 @@
+FROM golang:1.25 AS exporter-builder
+WORKDIR /src
+RUN git clone https://github.com/nesono/postfix_exporter.git .
+RUN go mod download && go mod verify
+RUN go build -tags nosystemd -o /bin/postfix_exporter
+
 FROM ubuntu:24.04
 LABEL maintainer="Jochen Issing <c.333+github@nesono.com> (@jochenissing)"
 
@@ -45,9 +51,12 @@ RUN mkdir -p /vhome/users/ && \
 # Also run something like the following command to change all existing files:
 # chown <uid>:<gid> -R /svc/volumes/mail
 
+COPY --from=exporter-builder /bin/postfix_exporter /usr/local/bin/postfix_exporter
+
 EXPOSE 587
 EXPOSE 465
 EXPOSE 25
+EXPOSE 9154
 
 VOLUME [ "/var/mail", "/var/spool/postfix", "/vhome/users" ]
 
