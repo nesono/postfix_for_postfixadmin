@@ -65,6 +65,9 @@ jobs:
     - name: Verify SRS config contains domain
       run: docker exec postfix-test grep 'mail.example.com' /etc/default/postsrsd
 
+    - name: Verify postfix_exporter binary is installed
+      run: docker exec postfix-test test -x /usr/local/bin/postfix_exporter
+
     - name: Verify milter packages are installed
       run: |
         docker exec postfix-test dpkg -l postgrey | grep -q '^ii'
@@ -194,6 +197,7 @@ jobs:
           -e DKIM_KEY_PATH=/etc/opendkim/keys/mail.private \
           -e DMARC_SOCKET_PATH=private/dmarc \
           -e MAIL_HOSTNAME=mail.example.com \
+          -e POSTFIX_EXPORTER_ENABLE=1 \
           -v /tmp/sql_user.txt:/tmp/sql_user.txt:ro \
           -v /tmp/sql_password.txt:/tmp/sql_password.txt:ro \
           -v /tmp/dkim-keys:/etc/opendkim/keys:ro \
@@ -201,7 +205,7 @@ jobs:
 
     - name: Wait for all services to reach RUNNING state
       run: |
-        SERVICES="postfix postsrs rsyslog spamd sa_learn postgrey spamass opendkim opendmarc"
+        SERVICES="postfix postsrs rsyslog spamd sa_learn postgrey spamass opendkim opendmarc postfix_exporter"
         for i in $(seq 1 60); do
           all_running=true
           for svc in $SERVICES; do
@@ -226,7 +230,7 @@ jobs:
     - name: Verify all milter services are running
       run: |
         docker exec milter-test supervisorctl -c /etc/supervisord.conf status
-        for svc in postfix postsrs rsyslog spamd sa_learn postgrey spamass opendkim opendmarc; do
+        for svc in postfix postsrs rsyslog spamd sa_learn postgrey spamass opendkim opendmarc postfix_exporter; do
           status=$(docker exec milter-test supervisorctl -c /etc/supervisord.conf status $svc | awk '{print $2}')
           echo "$svc: $status"
           if [[ "$status" != "RUNNING" ]]; then
@@ -272,6 +276,13 @@ jobs:
         echo "Spamass socket: $spamass_perms"
         echo "$spamass_perms" | grep -q 'opendkim'
         echo "Milter socket permissions verified"
+
+    - name: Verify postfix_exporter metrics endpoint
+      run: |
+        response=$(docker exec milter-test bash -c 'echo -e "GET /metrics HTTP/1.0\r\nHost: localhost\r\n\r\n" | nc -w 5 127.0.0.1 9154 | head -20')
+        echo "$response"
+        echo "$response" | grep -q 'postfix'
+        echo "Postfix exporter metrics endpoint verified"
 
     - name: Verify DKIM configuration was generated
       run: |
